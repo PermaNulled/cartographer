@@ -295,7 +295,8 @@ void NetworkMessage::SendRequestMapFilename(int mapDownloadId)
 	c_network_session* session = NULL;
 	network_life_cycle_in_squad_session(&session);
 
-	if (session->m_local_state == _network_session_state_peer_established)
+	if (session->established()
+		&& !session->is_host())
 	{
 		s_request_map_filename data;
 		XUserGetXUID(0, &data.player_id);

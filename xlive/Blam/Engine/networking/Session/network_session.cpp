@@ -265,9 +265,9 @@ bool __cdecl network_session_interface_get_local_user_properties(int32 user_inde
 	return INVOKE(0x1B10E0, 0x1970A8, network_session_interface_get_local_user_properties, user_index, out_controller_index, out_properties, out_player_voice, out_player_text_chat);
 }
 
-void __cdecl network_globals_configure_from_previous_state(int32 a1, bool a2)
+void __cdecl network_globals_switch_environment(int32 a1, bool a2)
 {
-	INVOKE(0x1B54CF, 0x1A922D, network_globals_configure_from_previous_state, a1, a2);
+	INVOKE(0x1B54CF, 0x1A922D, network_globals_switch_environment, a1, a2);
 }
 
 void network_session_apply_patches()

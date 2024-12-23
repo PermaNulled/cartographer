@@ -594,4 +594,4 @@ bool network_session_interface_set_local_user_character_type(int32 user_index, e
 bool network_session_interface_get_local_user_identifier(int32 user_index, s_player_identifier* out_identifier);
 void network_session_interface_set_local_user_rank(int32 user_index, int8 rank);
 bool __cdecl network_session_interface_get_local_user_properties(int32 user_index, int32* out_controller_index, s_player_properties* out_properties, int32* out_player_voice, int32* out_player_text_chat);
-void __cdecl network_globals_configure_from_previous_state(int32 a1, bool a2);
+void __cdecl network_globals_switch_environment(int32 a1, bool a2);

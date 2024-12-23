@@ -147,7 +147,7 @@ void game_time_get_date_and_time(s_date_and_time* date_and_time)
 
 void game_direct_connect_to_session(XNKID kid, XNKEY key, const XNADDR* addr, int8 exe_type, int32 exe_version, int32 comp_version)
 {
-    auto handler = (c_game_life_cycle_handler_joining*)c_game_life_cycle_manager::get()->m_life_cycle_handlers[e_game_life_cycle::_life_cycle_joining];
+    auto handler = (c_game_life_cycle_handler_joining*)c_game_life_cycle_manager::get()->m_life_cycle_handlers[_life_cycle_joining];
     handler->joining_xnkid = kid;
     handler->joining_xnkey = key;
     handler->joining_xnaddr = *addr;
@@ -173,7 +173,7 @@ void game_direct_connect_to_session(XNKID kid, XNKEY key, const XNADDR* addr, in
             }
         }
         user_interface_networking_reset_player_counts();
-        network_globals_configure_from_previous_state(2, 1);
+        network_globals_switch_environment(2, 1);
         csmemset(&handler->player_identifiers, 0, sizeof(handler->player_identifiers));
         csmemcpy(&handler->player_identifiers, local_identifiers, sizeof(s_player_identifier) * valid_local_player_count);
         csmemcpy(&handler->player_names, local_usernames, sizeof(wchar_t) * 16 * valid_local_player_count);
