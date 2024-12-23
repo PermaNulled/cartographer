@@ -146,8 +146,9 @@ void __stdcall handle_channel_message_hook(void* thisx, int network_channel_inde
 			LOG_TRACE_NETWORK("  - network address: {:x}", ntohl(addr.address.ipv4));
 
 			int32 peer_index = NetworkSession::GetPeerIndexFromNetworkAddress(&addr);
-			c_network_session* session = NetworkSession::GetActiveNetworkSession();
-			if (peer_index != NONE && !NetworkSession::IsPeerIndexLocal(peer_index))
+			c_network_session* session = NULL;
+			network_life_cycle_in_squad_session(&session);
+			if (peer_index != NONE && !session->is_peer_local(peer_index))
 			{
 				s_custom_map_filename data;
 				ZeroMemory(&data, sizeof(s_custom_map_filename));
@@ -163,10 +164,11 @@ void __stdcall handle_channel_message_hook(void* thisx, int network_channel_inde
 						received_data->player_id,
 						peer_index, map_filename.c_str(), received_data->map_download_id);
 
-					c_network_observer* observer = session->p_network_observer;
-					s_session_observer_channel* observer_channel = NetworkSession::GetPeerObserverChannel(peer_index);
+					c_network_observer* observer = session->m_network_observer;
+					s_session_peer* peer = session->get_session_peer(peer_index);
 
-					observer->send_message(session->session_index, observer_channel->observer_index, false, _custom_map_filename, sizeof(s_custom_map_filename), &data);
+					if (peer->is_remote_peer)
+						observer->send_message(session->m_session_index, peer->observer_channel_index, false, _custom_map_filename, sizeof(s_custom_map_filename), &data);
 				}
 				else
 				{
@@ -290,63 +292,66 @@ void __stdcall handle_channel_message_hook(void* thisx, int network_channel_inde
 
 void NetworkMessage::SendRequestMapFilename(int mapDownloadId)
 {
-	c_network_session* session = NetworkSession::GetActiveNetworkSession();
+	c_network_session* session = NULL;
+	network_life_cycle_in_squad_session(&session);
 
-	if (session->local_session_state == _network_session_state_peer_established)
+	if (session->m_local_state == _network_session_state_peer_established)
 	{
 		s_request_map_filename data;
 		XUserGetXUID(0, &data.player_id);
 		data.map_download_id = mapDownloadId;
 
-		c_network_observer* observer = session->p_network_observer;
-		s_session_observer_channel* observer_channel = NetworkSession::GetPeerObserverChannel(session->session_host_peer_index);
+		c_network_observer* observer = session->m_network_observer;
+		s_session_peer* peer = session->get_session_peer(session->m_session_host_peer_index);
 
-		if (observer_channel->field_1) {
-			observer->send_message(session->session_index, observer_channel->observer_index, false, _request_map_filename, sizeof(s_request_map_filename), &data);
+		if (peer->is_remote_peer) {
+			observer->send_message(session->m_session_index, peer->observer_channel_index, false, _request_map_filename, sizeof(s_request_map_filename), &data);
 
-			LOG_TRACE_NETWORK("{} session host peer index: {}, observer index {}, observer bool unk: {}, session index: {}",
+			LOG_TRACE_NETWORK("{} session host peer index: {}, observer index {}, observer is remote peer: {}, session index: {}",
 				__FUNCTION__,
-				session->session_host_peer_index,
-				observer_channel->observer_index,
-				observer_channel->field_1,
-				session->session_index);
+				session->m_session_host_peer_index,
+				peer->observer_channel_index,
+				peer->is_remote_peer,
+				session->m_session_index);
 		}
 	}
 }
 
-void NetworkMessage::SendRankChange(int peerIdx, BYTE rank)
+void NetworkMessage::SendRankChange(int peer_index, BYTE rank)
 {
-	c_network_session* session = NetworkSession::GetActiveNetworkSession();
-	if (NetworkSession::LocalPeerIsSessionHost())
+	c_network_session* session = NULL;
+	network_life_cycle_in_squad_session(&session);
+	if (session->is_host())
 	{
 		s_rank_change data;
 		data.rank = rank;
 
-		c_network_observer* observer = session->p_network_observer;
-		s_session_observer_channel* observer_channel = NetworkSession::GetPeerObserverChannel(peerIdx);
+		c_network_observer* observer = session->m_network_observer;
+		s_session_peer* peer = session->get_session_peer(peer_index);
 
-		if (peerIdx != NONE && !NetworkSession::IsPeerIndexLocal(peerIdx))
+		if (peer_index != NONE && !session->is_peer_local(peer_index))
 		{
-			if (observer_channel->field_1) {
-				observer->send_message(session->session_index, observer_channel->observer_index, false, _rank_change, sizeof(s_rank_change), &data);
+			if (peer->is_remote_peer) {
+				observer->send_message(session->m_session_index, peer->observer_channel_index, false, _rank_change, sizeof(s_rank_change), &data);
 			}
 		}
 	}
 }
-void NetworkMessage::SendAntiCheat(int peerIdx)
+void NetworkMessage::SendAntiCheat(int peer_index)
 {
-	c_network_session* session = NetworkSession::GetActiveNetworkSession();
+	c_network_session* session = NULL;
+	network_life_cycle_in_squad_session(&session);
 
-	if (NetworkSession::LocalPeerIsSessionHost())
+	if (session->is_host())
 	{
-		c_network_observer* observer = session->p_network_observer;
-		s_session_observer_channel* observer_channel = NetworkSession::GetPeerObserverChannel(peerIdx);
+		c_network_observer* observer = session->m_network_observer;
+		s_session_peer* peer = session->get_session_peer(peer_index);
 
 		s_anti_cheat data;
 		data.enabled = g_twizzler_status;
-		if (peerIdx != NONE && !NetworkSession::IsPeerIndexLocal(peerIdx)) {
-			if (observer_channel->field_1) {
-				observer->send_message(session->session_index, observer_channel->observer_index, false, _anti_cheat, sizeof(s_anti_cheat), &data);
+		if (peer_index != NONE && !session->is_peer_local(peer_index)) {
+			if (peer->is_remote_peer) {
+				observer->send_message(session->m_session_index, peer->observer_channel_index, false, _anti_cheat, sizeof(s_anti_cheat), &data);
 			}
 		}
 	}

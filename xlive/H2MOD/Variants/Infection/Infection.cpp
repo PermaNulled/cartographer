@@ -40,17 +40,20 @@ const wchar_t* infectionSoundTable[k_language_count][e_infection_sounds::_infect
 
 int Infection::calculateZombiePlayerIndex()
 {
-	if (NetworkSession::GetPlayerCount() > 0)
+	c_network_session* session = NULL;
+	network_life_cycle_in_squad_session(&session);
+
+	if (session->get_player_count() > 0)
 	{
 		std::mt19937 mt_rand(rd());
 		std::vector<int32> activePlayersIndices = NetworkSession::GetActivePlayerIndicesList();
-		std::uniform_int_distribution<int> dist(0, NetworkSession::GetPlayerCount() - 1);
+		std::uniform_int_distribution<int> dist(0, session->get_player_count() - 1);
 	
 		if (activePlayersIndices.empty())
 			return NONE;
 
 		int32 infectedPlayerIndex = activePlayersIndices[dist(mt_rand)];
-		LOG_TRACE_GAME(L"[h2mod-infection] random infection player index: {}, with name: {}", infectedPlayerIndex, NetworkSession::GetPlayerName(infectedPlayerIndex));
+		LOG_TRACE_GAME(L"[h2mod-infection] random infection player index: {}, with name: {}", infectedPlayerIndex, session->get_player_name(infectedPlayerIndex));
 
 		return infectedPlayerIndex;
 	}
@@ -60,49 +63,39 @@ int Infection::calculateZombiePlayerIndex()
 
 void Infection::sendTeamChange()
 {
-	if (NetworkSession::LocalPeerIsSessionHost())
+	c_network_session* session = NULL;
+	if (network_life_cycle_in_squad_session(&session))
 	{
-		int32 player_count = NetworkSession::GetPlayerCount();
-
-		if (player_count > 0)
+		if (session->is_host())
 		{
-			int32 player_array_index = 0;
-			datum player_indexes[k_maximum_players] = {};
-			e_game_team player_teams[k_maximum_players] = {};
+			int32 player_count = session->get_player_count();
 
-			for (int32 i = 0; i < k_maximum_players; i++)
+			if (player_count > 0)
 			{
-				if (NetworkSession::PlayerIsActive(i))
-				{
-					e_game_team team = zombiePlayerIndex == i ? k_zombie_team : k_humans_team;
-					bool is_current_player_zombie = zombiePlayerIndex == i;
+				int32 player_array_index = 0;
+				datum player_indexes[k_maximum_players] = {};
+				e_game_team player_teams[k_maximum_players] = {};
 
-					//if (!NetworkSession::IsPlayerLocal(i))
+				for (int32 i = 0; i < k_maximum_players; i++)
+				{
+					if (session->is_session_player_active(i))
 					{
+						e_game_team team = zombiePlayerIndex == i ? k_zombie_team : k_humans_team;
+						bool is_current_player_zombie = zombiePlayerIndex == i;
+
 						player_indexes[player_array_index] = i;
 						player_teams[player_array_index++] = team;
 
-						LOG_TRACE_GAME(L"[h2mod-infection] sent team change packet to player index: {}, with name: {}, infected?: {}", 
-							i, 
-							NetworkSession::GetPlayerName(i), 
+						LOG_TRACE_GAME(L"[h2mod-infection] sent team change packet to player index: {}, with name: {}, infected?: {}",
+							i,
+							session->get_player_name(i),
 							is_current_player_zombie
 						);
 					}
-					/*else 
-					{
-						if (!Memory::IsDedicatedServer())
-						{
-							s_player* local_player = s_player::get(i);
-
-							user_interface_controller_set_desired_team_index(local_player->controller_index, team);
-							user_interface_controller_update_network_properties(local_player->controller_index);
-							LOG_TRACE_GAME(L"[h2mod-infection] setting local player team index, infected?: {}", is_current_player_zombie);
-						}
-					}*/
 				}
-			}
 
-			NetworkSession::GetActiveNetworkSession()->switch_players_to_teams(player_indexes, player_array_index, player_teams);
+				session->switch_players_to_teams(player_indexes, player_array_index, player_teams);
+			}
 		}
 	}
 }
@@ -196,6 +189,9 @@ void Infection::preSpawnServerSetup() {
 	/*
 		Game state players should be initialized when we are about to spawn a player
 	*/
+
+	c_network_session* session = NULL;
+	network_life_cycle_in_squad_session(&session);
 	
 	player_iterator player_it;
 	while (player_it.get_next_active_player())
@@ -217,11 +213,8 @@ void Infection::preSpawnServerSetup() {
 			s_player::set_unit_character_type(currentPlayerIndex, _character_type_flood);
 			if (s_player::get_team(currentPlayerIndex) != k_zombie_team) 
 			{
-				if (NetworkSession::LocalPeerIsSessionHost())
-				{
-					// prevent the fucks from switching to humans in the pre-game lobby after joining
-					NetworkSession::GetActiveNetworkSession()->switch_player_team(player_it.get_current_player_datum_index(), k_zombie_team);
-				}
+				// prevent the fucks from switching to humans in the pre-game lobby after joining
+				session->switch_player_team(player_it.get_current_player_datum_index(), k_zombie_team);
 			}
 		}
 		else 

@@ -6,7 +6,7 @@
 #include "cseries/cseries_strings.h"
 #include "main/main_game.h"
 #include "game/game.h"
-#include "networking/Session/NetworkSession.h"
+#include "networking/logic/life_cycle_manager.h" 
 
 /* constants */
 
@@ -232,11 +232,11 @@ void discord_interface_zero_player_count(void)
 
 void discord_interface_set_player_counts(void)
 {
-	c_network_session* session = nullptr;
-	if (NetworkSession::GetActiveNetworkSession(&session))
+	c_network_session* session = NULL;
+	if (network_life_cycle_in_squad_session(&session))
 	{
-		g_discord_globals.activity.party.size.current_size = session->membership[0].player_count;
-		g_discord_globals.activity.party.size.max_size = session->parameters[0].max_party_players;
+		g_discord_globals.activity.party.size.current_size = session->m_session_membership.player_count;
+		g_discord_globals.activity.party.size.max_size = session->m_session_parameters.max_party_players;
 	}
 	else
 	{
@@ -325,17 +325,20 @@ void discord_rich_presence_update(s_discord_data* discord)
 	g_discord_globals.activity.application_id = k_discord_client_id;
 	g_discord_globals.activity.supported_platforms = DiscordActivitySupportedPlatformFlags_Desktop;
 
-	c_network_session* network_session = NetworkSession::GetActiveNetworkSession();
-	if (network_session && (network_session->session_host_peer_index != NONE && network_session->local_session_state != _network_session_state_peer_leaving))
+	c_network_session* network_session = NULL;
+	if (network_life_cycle_in_squad_session(&network_session) 
+		&& (network_session->m_session_host_peer_index != NONE 
+		&& network_session->m_local_state != _network_session_state_peer_leaving))
 	{
-		bool not_session_host = !NetworkSession::LocalPeerIsSessionHost();
+		bool session_host = network_session->is_host();
 
 		XSESSION_INFO session;
-		const int32 observer_index = NetworkSession::GetPeerObserverChannel(network_session->session_host_peer_index)->observer_index;
+		const int32 observer_index = network_session->get_session_peer(network_session->m_session_host_peer_index)->observer_channel_index;
 
 		session.sessionID = network_session->session_id;
 		session.keyExchangeKey = network_session->xnkey;
-		session.hostAddress = (not_session_host ? network_session->p_network_observer->observer_channels[observer_index].xnaddr : network_session->virtual_couch[0].xsession_info.hostAddress);
+		session.hostAddress = 
+			(session_host ? network_session->m_session_virtual_couch.xsession_info.hostAddress : network_session->m_network_observer->m_observer_channels[observer_index].xnaddr);
 
 		XUID host;
 		XUserGetXUID(0, &host);

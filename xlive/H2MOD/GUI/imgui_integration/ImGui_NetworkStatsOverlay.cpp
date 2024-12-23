@@ -5,7 +5,7 @@
 
 #include "game/game_time.h"
 #include "networking/memory/networking_memory.h"
-#include "networking/Session/NetworkSession.h"
+#include "networking/logic/life_cycle_manager.h"
 #include "simulation/simulation.h"
 
 #include "XLive/xnet/IpManagement/XnIp.h"
@@ -77,8 +77,8 @@ void ShowNetworkStatsOverlay(bool* p_open)
 		ImGui::Text("Network stats overlay\n");
 		ImGui::Separator();
 
-		c_network_session* session;
-		if (NetworkSession::GetActiveNetworkSession(&session))
+		c_network_session* session = NULL;
+		if (network_life_cycle_in_squad_session(&session))
 		{
 			ImGui::Text("Network protocol: %s", session->describe_network_protocol_type());
 		}

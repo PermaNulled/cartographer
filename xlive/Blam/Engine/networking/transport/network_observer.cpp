@@ -160,7 +160,7 @@ bool __thiscall c_network_observer::get_bandwidth_results(int32 *out_throughput,
 	return false;
 }
 
-void __declspec(naked) call_get_bandwidth_results() { __asm jmp c_network_observer::get_bandwidth_results }
+void __declspec(naked) jmp_get_bandwidth_results() { __asm jmp c_network_observer::get_bandwidth_results }
 
 // raw WinSock has a 28 bytes packet overhead for the packet header, unlike Xbox LIVE, which has 44 bytes (28 bytes + whatever LIVE packet header adds)
 int32 __cdecl transport_get_packet_overhead_hook(int32 protocol_type)
@@ -213,8 +213,8 @@ bool __thiscall c_network_observer::channel_should_send_packet_hook(
 	int32 observer_index = NONE;
 	for (int32 i = 0; i < 16; i++)
 	{
-		if (this->observer_channels[i].state != _observer_channel_state_none
-			&& this->observer_channels[i].channel_index == network_channel_index)
+		if (this->m_observer_channels[i].state != _observer_channel_state_none
+			&& this->m_observer_channels[i].channel_index == network_channel_index)
 		{
 			observer_index = i;
 			break;
@@ -225,7 +225,7 @@ bool __thiscall c_network_observer::channel_should_send_packet_hook(
 		return false;
 
 	s_network_channel* network_channel = s_network_channel::get(network_channel_index);
-	s_observer_channel* observer_channel = &this->observer_channels[observer_index];
+	s_observer_channel* observer_channel = &this->m_observer_channels[observer_index];
 
 	// we modify the network channel paramters to force the network tickrate
 	const real32 _temp_network_rate					= observer_channel->net_rate_managed_stream;
@@ -342,7 +342,7 @@ void c_network_observer::apply_patches()
 	// increase the network heap size
 	WriteValue<int32>(Memory::GetAddress(0x1ACCC8, 0x1ACE96) + 6, k_network_heap_size);
 
-	PatchCall(Memory::GetAddress(0x1E0FEE, 0x1B5EDE), call_get_bandwidth_results);
+	PatchCall(Memory::GetAddress(0x1E0FEE, 0x1B5EDE), jmp_get_bandwidth_results);
 
 	WriteJmpTo(Memory::GetAddressRelative(0x5AC1BD, 0x5A6B76), transport_get_packet_overhead_hook);
 

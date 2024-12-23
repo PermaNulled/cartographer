@@ -177,6 +177,6 @@ namespace NetworkMessage
 {
 	void ApplyGamePatches();
 	void SendRequestMapFilename(int mapDownloadId);
-	void SendRankChange(int peerIdx, BYTE rank);
-	void SendAntiCheat(int peerIdx);
+	void SendRankChange(int peer_index, BYTE rank);
+	void SendAntiCheat(int peer_index);
 }

@@ -1,5 +1,7 @@
 #pragma once
-#include "networking/Session/NetworkSession.h"
+
+#include "networking/session/network_session.h"
+#include "networking/transport/network_observer.h"
 
 enum e_game_life_cycle : int32
 {
@@ -18,6 +20,7 @@ typedef bool (*life_cycle_update)(void* life_cycle_handler);
 typedef void (*life_cycle_initialize)(void* life_cycle_handler_requested, void* life_cycle_handler_current, int32 unk_1, void* unk_2);
 typedef void (*life_cycle_dispose)(void* life_cycle_handler_current, void* life_cycle_handler_requested);
 
+class c_game_life_cycle_manager;
 
 class c_game_life_cycle_handler_functions
 {
@@ -32,9 +35,9 @@ class c_game_life_cycle_handler
 public:
 	c_game_life_cycle_handler_functions* functions;
 	e_game_life_cycle life_cycle;
-	void* life_cycle_manager;
+	c_game_life_cycle_manager* life_cycle_manager;
 	bool field_C;
-	void initialize(void* life_cycle_manager, e_game_life_cycle life_cycle, bool a3);
+	void initialize(c_game_life_cycle_manager* life_cycle_manager, e_game_life_cycle life_cycle, bool a3);
 };
 
 struct c_game_life_cycle_handler_none : c_game_life_cycle_handler
@@ -118,48 +121,52 @@ ASSERT_STRUCT_SIZE(c_game_life_cycle_handler_match_making, 0x18);
 class c_game_life_cycle_manager
 {
 public:
-	bool initialized;
-	e_game_life_cycle life_cycle_state;
-	c_game_life_cycle_handler* life_cycle_handlers[e_game_life_cycle::k_life_cycle_count];
-	void* network_session_manager;
-	c_network_session* network_session;
-	void* text_chat_manager_maybe;
-	void* network_message_gateway;
-	void* network_observer;
-	bool life_cycle_changing;
-	bool life_cycle_updating;
-	bool update_requested;
-	e_game_life_cycle requested_life_cycle;
+	bool m_initialized;
+	e_game_life_cycle m_state;
+	c_game_life_cycle_handler* m_life_cycle_handlers[e_game_life_cycle::k_life_cycle_count];
+	void* m_network_session_manager;
+	c_network_session* m_network_session;
+	void* m_text_chat;
+	void* m_network_message_gateway;
+	c_network_observer* m_network_observer;
+	bool m_life_cycle_changing;
+	bool m_life_cycle_updating;
+	bool m_update_requested;
+	e_game_life_cycle m_requested_life_cycle;
 	int32 field_3C;
 	void* field_40;
 	c_game_life_cycle_manager(
 		void* network_message_gateway, 
-		void* network_observer, 
+		c_network_observer* network_observer, 
 		void* network_session_manager, 
 		c_network_session* network_session,
 		void* text_chat_manager_maybe)
 	{
-		this->life_cycle_state = _life_cycle_none;
-		this->network_message_gateway = network_message_gateway;
-		this->network_observer = network_observer;
-		this->network_session_manager = network_session_manager;
-		this->network_session = network_session;
-		this->text_chat_manager_maybe = text_chat_manager_maybe;
-		this->life_cycle_updating = false;
-		this->life_cycle_changing = false;
-		this->update_requested = false;
-		this->requested_life_cycle = _life_cycle_none;
+		this->m_state = _life_cycle_none;
+		this->m_network_message_gateway = network_message_gateway;
+		this->m_network_observer = network_observer;
+		this->m_network_session_manager = network_session_manager;
+		this->m_network_session = network_session;
+		this->m_text_chat = text_chat_manager_maybe;
+		this->m_life_cycle_updating = false;
+		this->m_life_cycle_changing = false;
+		this->m_update_requested = false;
+		this->m_requested_life_cycle = _life_cycle_none;
 		this->field_3C = 0;
-		this->field_40 = nullptr;
+		this->field_40 = NULL;
 	}
 
 	static bool game_life_cycle_initialized();
 	static c_game_life_cycle_manager* get();
-	static bool get_active_session(c_network_session** out_session);
+	
 
 	e_game_life_cycle get_life_cycle() const;
+	bool get_active_session(c_network_session** out_session);
+	
 	bool state_is_joining() const;
 	bool state_is_in_game() const;
 	void request_state_change(e_game_life_cycle requested_state, int a3, void* a4);
 };
 ASSERT_STRUCT_SIZE(c_game_life_cycle_manager, 0x48);
+
+bool network_life_cycle_in_squad_session(c_network_session** out_network_session);

@@ -7,7 +7,6 @@
 #include "game/game_time.h"
 #include "networking/logic/life_cycle_manager.h"
 #include "networking/NetworkMessageTypeCollection.h"
-#include "networking/Session/NetworkSession.h"
 #include "physics/physics_constants.h"
 #include "units/units.h"
 
@@ -51,10 +50,11 @@ namespace CustomVariantSettings
 		currentVariantSettings = *data;
 	}
 
-	void SendCustomVariantSettings(int peerIndex)
+	void SendCustomVariantSettings(int32 peer_index)
 	{
-		c_network_session* session = NetworkSession::GetActiveNetworkSession();
-		if (NetworkSession::LocalPeerIsSessionHost() && Memory::IsDedicatedServer())
+		c_network_session* session = NULL;
+		network_life_cycle_in_squad_session(&session);
+		if (session->is_host() && Memory::IsDedicatedServer())
 		{
 			//TODO: Find and map out struct with current variant information.
 			auto VariantName = std::wstring(Memory::GetAddress<wchar_t*>(0, 0x534A18));
@@ -64,12 +64,18 @@ namespace CustomVariantSettings
 			{
 				currentVariantSettings = customVariantSetting->second;
 				if (currentVariantSettings != defaultCustomVariantSettings) {
-					c_network_observer* observer = session->p_network_observer;
-					s_session_observer_channel* observer_channel = NetworkSession::GetPeerObserverChannel(peerIndex);
-					if (peerIndex != -1 && !NetworkSession::IsPeerIndexLocal(peerIndex))
+					c_network_observer* observer = session->m_network_observer;
+					s_session_peer* peer = session->get_session_peer(peer_index);
+					if (peer_index != NONE && !session->is_peer_local(peer_index))
 					{
-						if (observer_channel->field_1)
-							observer->send_message(session->session_index, observer_channel->observer_index, false, _custom_variant_settings, CustomVariantSettingsPacketSize, &currentVariantSettings);
+						if (peer->is_remote_peer)
+							observer->send_message(
+								session->m_session_index, 
+								peer->observer_channel_index, 
+								false, 
+								_custom_variant_settings, 
+								CustomVariantSettingsPacketSize, 
+								&currentVariantSettings);
 					}
 				}
 			}
@@ -184,13 +190,15 @@ namespace CustomVariantSettings
 	}
 	void OnMatchCountdown()
 	{
-		//
-		//Anything host related before the game starts goes here.
-		//
-		for (auto i = 0; i < NetworkSession::GetPeerCount(); i++)
+		// Anything host related before the game starts goes here.
+		c_network_session* session = NULL;
+		if (network_life_cycle_in_squad_session(&session))
 		{
-			if (!NetworkSession::IsPeerIndexLocal(i))
-				SendCustomVariantSettings(i);
+			for (int32 i = 0; i < session->get_peer_count(); i++)
+			{
+				if (!session->is_peer_local(i))
+					SendCustomVariantSettings(i);
+			}
 		}
 	}
 

@@ -907,7 +907,7 @@
     <ClCompile Include="Blam\Engine\memory\bitstream.cpp" />
     <ClCompile Include="Blam\Engine\networking\transport\network_channel.cpp" />
     <ClCompile Include="Blam\Engine\networking\transport\network_observer.cpp" />
-    <ClCompile Include="Blam\Engine\Networking\Session\NetworkSession.cpp" />
+    <ClCompile Include="Blam\Engine\networking\session\network_session.cpp" />
     <ClCompile Include="H2MOD\Modules\PlaylistLoader\PlaylistLoader.cpp" />
     <ClCompile Include="H2MOD\Modules\RenderHooks\RenderHooks.cpp" />
     <ClCompile Include="H2MOD\Modules\Shell\H2MODShell.cpp" />
@@ -1343,7 +1343,7 @@
     <ClInclude Include="Blam\Engine\memory\bitstream.h" />
     <ClInclude Include="Blam\Engine\networking\transport\network_channel.h" />
     <ClInclude Include="Blam\Engine\networking\transport\network_observer.h" />
-    <ClInclude Include="Blam\Engine\Networking\Session\NetworkSession.h" />
+    <ClInclude Include="Blam\Engine\networking\session\network_session.h" />
     <ClInclude Include="H2MOD\Modules\PlaylistLoader\PlaylistLoader.h" />
     <ClInclude Include="H2MOD\Modules\RenderHooks\RenderHooks.h" />
     <ClInclude Include="H2MOD\Modules\Shell\ServerConsole.h" />

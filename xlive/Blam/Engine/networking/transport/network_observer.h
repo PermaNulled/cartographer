@@ -57,7 +57,7 @@ struct alignas(8) s_observer_channel
 	int32 state;
 	int32 field_4;
 	uint8 observer_flags;
-	uint8 field_9;
+	uint8 owner_flags;
 	uint16 field_A;
 	int32 channel_index;
 	int32 field_10;
@@ -156,10 +156,10 @@ ASSERT_STRUCT_SIZE(s_observer_channel, 0x740);
 struct alignas(8) c_network_observer
 {
 public:
-	void* network_observer_vtbl; // vtable at the start
-	void* network_link;
-	void* network_message_gateway;
-	void* message_types;
+	void* vtbl;
+	void* m_network_link;
+	void* m_network_message_gateway;
+	void* m_message_types;
 	s_network_observer_configuration* configuration;
 	int32 *field_14;
 	uint8 gap_18[8];
@@ -173,7 +173,7 @@ public:
 	uint8 gap_68[12];
 	int32 field_74;
 	uint8 gap_78[8];
-	s_observer_channel observer_channels[k_network_channel_count];
+	s_observer_channel m_observer_channels[k_network_channel_count];
 	bool network_observer_enabled;
 	int8 field_7481;
 	int32 field_7484;
@@ -225,7 +225,7 @@ public:
 		uint8* out_voice_chat_data_buffer);
 
 	bool __thiscall get_bandwidth_results(int32 *out_throughput, real32 *out_satiation, int32 *a4);
-	int32 get_observer_channel_state(int32 observer_index) { return observer_channels[observer_index].state; };
+	int32 get_observer_channel_state(int32 observer_index) { return m_observer_channels[observer_index].state; };
 	void send_message(int32 session_index, int32 observer_index, bool send_out_of_band, int32 type, int32 size, void* data);
 
 private:

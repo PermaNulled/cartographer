@@ -161,7 +161,7 @@ struct s_simulation_player_netdebug_data
 	int16 client_rtt_msec;
 	int16 client_packet_rate;
 	int16 client_throughput;
-	int16 client_packet_loss;
+	int16 client_packet_loss_percentage;
 };
 ASSERT_STRUCT_SIZE(s_simulation_player_netdebug_data, 16);
 

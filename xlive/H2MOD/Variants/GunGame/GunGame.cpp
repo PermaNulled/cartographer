@@ -2,7 +2,7 @@
 #include "GunGame.h"
 
 #include "game/game.h"
-#include "networking/Session/NetworkSession.h"
+#include "networking/logic/life_cycle_manager.h"
 #include "units/units.h"
 #include "H2MOD.h"
 

@@ -3,7 +3,7 @@
 #include "simulation_players.h"
 
 #include "memory/bitstream.h"
-#include "networking/Session/NetworkSession.h"
+#include "networking/logic/life_cycle_manager.h"
 
 struct simulation_machine_update
 {

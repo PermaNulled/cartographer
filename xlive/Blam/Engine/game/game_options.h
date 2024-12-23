@@ -1,5 +1,5 @@
 #pragma once
-#include "networking/Session/NetworkSession.h"
+#include "networking/logic/life_cycle_manager.h"
 #include "saved_games/game_variant.h"
 #include "simulation/machine_id.h"
 

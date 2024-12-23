@@ -10,7 +10,7 @@
 #include "main/main_game_time.h"
 #include "main/main_render.h"
 #include "main/main_screenshot.h"
-#include "networking/Session/NetworkSession.h"
+#include "networking/logic/life_cycle_manager.h"
 #include "networking/NetworkMessageTypeCollection.h"
 #include "render/render_cartographer_ingame_ui.h"
 #include "objects/objects.h"
@@ -254,7 +254,7 @@ int CommandCollection::LogSelectedMapFilenameCmd(const std::vector<std::string>&
 {
 	TextOutputCb* outputCb = ctx.outputCb;
 
-	if (!NetworkSession::GetActiveNetworkSession(nullptr))
+	if (!network_life_cycle_in_squad_session(NULL))
 	{
 		outputCb(StringFlag_None, "# not in a network session");
 		return 0;
@@ -265,7 +265,7 @@ int CommandCollection::LogSelectedMapFilenameCmd(const std::vector<std::string>&
 
 	utf8 map_name[256];
 	wchar_string_to_utf8_string(mapFilenameWide.c_str(), map_name, NUMBEROF(map_name));
-  outputCb(StringFlag_None, "# map file name: %s", map_name);
+	outputCb(StringFlag_None, "# map file name: %s", map_name);
 	return 0;
 }
 
@@ -273,7 +273,7 @@ int CommandCollection::RequestFileNameCmd(const std::vector<std::string>& tokens
 {
 	TextOutputCb* outputCb = ctx.outputCb;
 
-	if (!NetworkSession::GetActiveNetworkSession(nullptr))
+	if (!network_life_cycle_in_squad_session(NULL))
 	{
 		outputCb(StringFlag_None, "# not in a network session");
 		return 0;
@@ -292,7 +292,7 @@ int CommandCollection::LeaveNetworkSessionCmd(const std::vector<std::string>& to
 {
 	TextOutputCb* outputCb = ctx.outputCb;
 
-	if (!NetworkSession::GetActiveNetworkSession(nullptr))
+	if (!network_life_cycle_in_squad_session(NULL))
 	{
 		outputCb(StringFlag_None, "# not in a network session");
 		return 0;
@@ -310,8 +310,8 @@ int CommandCollection::IsSessionHostCmd(const std::vector<std::string>& tokens, 
 {
 	TextOutputCb* outputCb = ctx.outputCb;
 
-	c_network_session* session;
-	if (!NetworkSession::GetActiveNetworkSession(&session))
+	c_network_session* session = NULL;
+	if (!network_life_cycle_in_squad_session(&session))
 	{
 		outputCb(StringFlag_None, "# not in a network session");
 		return 0;
@@ -319,8 +319,8 @@ int CommandCollection::IsSessionHostCmd(const std::vector<std::string>& tokens, 
 
 	std::string isHostStr;
 	isHostStr += "# Session host: ";
-	isHostStr += (NetworkSession::LocalPeerIsSessionHost() ? "yes" : "no");
-	isHostStr += ", value=" + std::to_string(session->local_session_state);
+	isHostStr += (session->is_host() ? "yes" : "no");
+	isHostStr += ", value=" + std::to_string(session->m_local_state);
 	outputCb(StringFlag_None, isHostStr.c_str());
 	return 0;
 }
@@ -328,12 +328,12 @@ int CommandCollection::IsSessionHostCmd(const std::vector<std::string>& tokens, 
 int CommandCollection::KickPeerCmd(const std::vector<std::string>& tokens, ConsoleCommandCtxData ctx)
 {
 	TextOutputCb* outputCb = ctx.outputCb;
-	int peerIndex;
+	int32 peer_index;
 	std::string exception;
 
 	do
 	{
-		if (!ComVar(&peerIndex).SetFromStr(tokens[1], 0, exception))
+		if (!ComVar(&peer_index).SetFromStr(tokens[1], 0, exception))
 		{
 			outputCb(StringFlag_None, command_error_bad_arg);
 			outputCb(StringFlag_None, "	%s", exception.c_str());
@@ -347,16 +347,16 @@ int CommandCollection::KickPeerCmd(const std::vector<std::string>& tokens, Conso
 			outputCb(StringFlag_None, "# only the host can kick players");
 			break;
 		}
-		else if (NetworkSession::GetLocalPeerIndex() == peerIndex) {
+		else if (NetworkSession::GetLocalPeerIndex() == peer_index) {
 			outputCb(StringFlag_None, "# don't kick yourself");
 			break;
 		}
-		else if (peerIndex >= NetworkSession::GetPeerCount()) {
+		else if (peer_index >= NetworkSession::GetPeerCount()) {
 			outputCb(StringFlag_None, "# peer at the specified index doesn't exist");
 			break;
 		}
 
-		NetworkSession::KickPeer(peerIndex);
+		NetworkSession::KickPeer(peer_index);
 	} while (0);
 
 	return 0;
@@ -437,35 +437,36 @@ int CommandCollection::LogPlayersCmd(const std::vector<std::string>& tokens, Con
 	TextOutputCb* outputCb = ctx.outputCb;
 	const ConsoleCommand* command_data = ctx.consoleCommand;
 
-	if (!NetworkSession::GetActiveNetworkSession(nullptr))
+	c_network_session* session = NULL;
+	if (!network_life_cycle_in_squad_session(&session))
 	{
 		outputCb(StringFlag_None, "# not in a network session");
 		return 0;
 	}
-	else if (!NetworkSession::LocalPeerIsSessionHost())
+	else if (!session->is_host())
 	{
 		outputCb(StringFlag_None, "# must be network session host");
 		return 0;
 	}
 
-	outputCb(StringFlag_None, "# %i players: ", NetworkSession::GetPlayerCount());
+	outputCb(StringFlag_None, "# %i players: ", session->get_player_count());
 
-	for (int playerIdx = 0; playerIdx < k_maximum_players; playerIdx++)
+	for (int32 player_index = 0; player_index < k_maximum_players; player_index++)
 	{
-		if (NetworkSession::PlayerIsActive(playerIdx))
+		if (session->is_session_player_active(player_index))
 		{
-			std::wstring playerNameWide(NetworkSession::GetPlayerName(playerIdx));
+			std::wstring playerNameWide(session->get_player_name(player_index));
 			std::string playerName(playerNameWide.begin(), playerNameWide.end());
-			std::string outStr = "# Player index=" + std::to_string(playerIdx);
-			outStr += ", Peer index=" + std::to_string(NetworkSession::GetPeerIndex(playerIdx));
+			std::string outStr = "# Player index=" + std::to_string(player_index);
+			outStr += ", Peer index=" + std::to_string(NetworkSession::GetPeerIndex(player_index));
 			outStr += ", PlayerName=" + playerName;
 
-			playerNameWide = s_player::get_name(playerIdx);
+			playerNameWide = s_player::get_name(player_index);
 			playerName = std::string(playerNameWide.begin(), playerNameWide.end());
 
 			outStr += ", Name from game player state=" + playerName;
-			outStr += ", Team=" + std::to_string(NetworkSession::GetPlayerTeam(playerIdx));
-			outStr += ", Identifier=" + std::to_string(NetworkSession::GetPlayerId(playerIdx));
+			outStr += ", Team=" + std::to_string(NetworkSession::GetPlayerTeam(player_index));
+			outStr += ", Identifier=" + std::to_string(NetworkSession::GetPlayerId(player_index));
 
 			outputCb(StringFlag_None, outStr.c_str());
 		}
@@ -479,38 +480,37 @@ int CommandCollection::LogPeersCmd(const std::vector<std::string>& tokens, Conso
 	TextOutputCb* outputCb = ctx.outputCb;
 	const ConsoleCommand* command_data = ctx.consoleCommand;
 
-	c_network_session* session;
-
-	if (!NetworkSession::GetActiveNetworkSession(&session))
+	c_network_session* session = NULL;
+	if (!network_life_cycle_in_squad_session(&session))
 	{
 		outputCb(StringFlag_None, "# not in a network session");
 		return 0;
 	}
-	else if (!NetworkSession::LocalPeerIsSessionHost())
+	else if (!session->is_host())
 	{
 		outputCb(StringFlag_None, "# must be network session host");
 		return 0;
 	}
 
-	c_network_observer* observer = NetworkSession::GetActiveNetworkSession()->p_network_observer;
+	c_network_observer* observer = session->m_network_observer;
 
-	outputCb(StringFlag_None, "# %i peers: ", NetworkSession::GetPeerCount());
+	outputCb(StringFlag_None, "# %i peers: ", session->get_peer_count());
 
-	for (int32 peer_index = 0; peer_index < NetworkSession::GetPeerCount(); peer_index++)
+	for (int32 peer_index = 0; peer_index < session->get_peer_count(); peer_index++)
 	{
-		auto peer_observer_channel = &observer->observer_channels[session->observer_channels[peer_index].observer_index];
+		auto peer_observer_channel = &observer->m_observer_channels[session->m_session_peers[peer_index].observer_channel_index];
 
-		std::wstring peerNameWide(session->membership[0].peers[peer_index].name);
+		std::wstring peerNameWide(session->m_session_membership.membership_peers[peer_index].name);
 		std::string peerName(peerNameWide.begin(), peerNameWide.end());
 
 		std::string outStr = "# Peer index=" + std::to_string(peer_index);
 		outStr += ", Peer Name=" + peerName;
 		outStr += ", Connection Status=" + std::to_string(peer_observer_channel->state);
-		outStr += ", Peer map state: " + std::to_string(session->membership[0].peers[peer_index].map_status);
-		datum player_index = session->membership[0].peers[peer_index].local_players_indexes[0];
+		outStr += ", Peer map state: " + std::to_string(session->m_session_membership.membership_peers[peer_index].map_status);
+		datum player_index = session->m_session_membership.membership_peers[peer_index].local_players_indexes[0];
 		if (player_index != NONE)
 		{
-			std::wstring playerNameWide(NetworkSession::GetPlayerName(player_index));
+			std::wstring playerNameWide(session->get_player_membership(player_index)->properties[0].player_name);
 			std::string playerName(playerNameWide.begin(), playerNameWide.end());
 			outStr += ", Player index=" + std::to_string(player_index);
 			outStr += ", Player name=" + playerName;
@@ -534,7 +534,13 @@ int CommandCollection::SetMaxPlayersCmd(const std::vector<std::string>& tokens, 
 
 	do
 	{
-		if (!NetworkSession::LocalPeerIsSessionHost()) {
+		c_network_session* session = NULL;
+		if (!network_life_cycle_in_squad_session(&session))
+		{
+			outputCb(StringFlag_None, "# not in a network session");
+			break;
+		}
+		else if (!session->is_host()) {
 			outputCb(StringFlag_None, "# can be only used by host");
 			break;
 		}
@@ -548,12 +554,12 @@ int CommandCollection::SetMaxPlayersCmd(const std::vector<std::string>& tokens, 
 			outputCb(StringFlag_None, "# the value needs to be between 1 and 16");
 			break;
 		}
-		else if (max_players < NetworkSession::GetPlayerCount()) {
+		else if (max_players < session->get_player_count()) {
 			outputCb(StringFlag_None, "# you can't set a value of max players smaller than the actual number of players on the server");
 			break;
 		}
 
-		NetworkSession::GetActiveNetworkSession()->parameters[0].max_party_players = max_players;
+		session->m_session_parameters.max_party_players = max_players;
 		outputCb(StringFlag_None, "# maximum players set: %i", max_players);
 	} while (0);
 
@@ -894,17 +900,17 @@ int CommandCollection::game_mode(const std::vector<std::string>& tokens, Console
 int CommandCollection::invite(const std::vector<std::string>& tokens, ConsoleCommandCtxData ctx)
 {
 	TextOutputCb* outputCb = ctx.outputCb;
-	c_network_session* network_session = NetworkSession::GetActiveNetworkSession();
-	bool not_session_host = !NetworkSession::LocalPeerIsSessionHost();
+	c_network_session* session = NULL;
+	network_life_cycle_in_squad_session(&session);
+	bool session_host = session->is_host();
 
-	XSESSION_INFO session;
-	session.sessionID = network_session->session_id;
-	session.keyExchangeKey = network_session->xnkey;
-	session.hostAddress = (not_session_host ?
-		network_session->p_network_observer->observer_channels[NetworkSession::GetPeerObserverChannel(network_session->session_host_peer_index)->observer_index].xnaddr
-		: network_session->virtual_couch[0].xsession_info.hostAddress);
+	XSESSION_INFO x_session_info;
+	x_session_info.sessionID = session->session_id;
+	x_session_info.keyExchangeKey = session->xnkey;
+	x_session_info.hostAddress = (session_host ? session->m_session_virtual_couch.xsession_info.hostAddress :
+		session->m_network_observer->m_observer_channels[session->get_session_peer(session->m_session_host_peer_index)->observer_channel_index].xnaddr);
 
-	uint8* session_bytes = (uint8*)&session;
+	uint8* session_bytes = (uint8*)&x_session_info;
 	char connect_string[sizeof(XSESSION_INFO) * 2 + 1];
 
 	// Encode the data into hex string
@@ -937,13 +943,21 @@ int CommandCollection::connect(const std::vector<std::string>& tokens, ConsoleCo
 
 int CommandCollection::change_player_team(const std::vector<std::string>& tokens, ConsoleCommandCtxData ctx)
 {
+	TextOutputCb* outputCb = ctx.outputCb;
+
 	int32 player_index = NONE;
 	int32 new_team_index = NONE;
 
 	if (ComVar(&player_index).SetFromStr(tokens[1])
 		&& ComVar(&new_team_index).SetFromStr(tokens[2]))
 	{
-		c_network_session* session = NetworkSession::GetActiveNetworkSession();
+		c_network_session* session = NULL;
+		if (!network_life_cycle_in_squad_session(&session))
+		{
+			outputCb(StringFlag_None, "# not in a network session");
+			return 0;
+		}
+
 		session->switch_player_team(player_index, (e_game_team)new_team_index);
 	}
 

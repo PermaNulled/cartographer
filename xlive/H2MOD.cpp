@@ -511,12 +511,14 @@ user_interface_controller_set_desired_team_index_t p_user_interface_controller_s
 
 void __cdecl user_interface_controller_set_desired_team_index_hook(e_controller_index controller_index, e_game_team team)
 {
-	c_network_session* session = NetworkSession::GetActiveNetworkSession();
+	c_network_session* session = NULL;
+	network_life_cycle_in_squad_session(&session);
 
 	// prevent team switch in the pregame lobby, when the game already started
-	if (session) {
-		if ((session->parameters[0].session_mode == 4
-			&& get_game_life_cycle() == _life_cycle_pre_game))
+	if (session
+		&& session->session_mode() == _network_session_mode_in_game
+		&& get_game_life_cycle() == _life_cycle_pre_game) 
+	{
 			return;
 	}
 	p_user_interface_controller_set_desired_team_index(controller_index, team);
@@ -615,15 +617,18 @@ bool __cdecl should_start_pregame_countdown_hook()
 	// dedicated server only
 	auto p_should_start_pregame_countdown = Memory::GetAddress<decltype(&should_start_pregame_countdown_hook)>(0x0, 0xBC2A);
 
+	c_network_session* session = NULL;
+	network_life_cycle_in_squad_session(&session);
+
 	// if the game already thinks the game timer doesn't need to start, return false and skip any processing
 	if (!p_should_start_pregame_countdown()
-		|| !NetworkSession::LocalPeerIsSessionLeader())
+		|| !session->is_local_peer_session_leader())
 		return false; 
 
 	bool minimumPlayersConditionMet = true;
 	if (H2Config_minimum_player_start > 0)
 	{
-		if (NetworkSession::GetPlayerCount() >= H2Config_minimum_player_start)
+		if (session->get_player_count() >= H2Config_minimum_player_start)
 		{
 			LOG_INFO_GAME(L"{} - minimum Player count met", __FUNCTIONW__);
 			minimumPlayersConditionMet = true;

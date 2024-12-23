@@ -4,7 +4,7 @@
 #include "cartographer/discord/discord_interface.h"
 #include "cseries/cseries_strings.h"
 #include "game/game.h"
-#include "networking/Session/NetworkSession.h"
+#include "networking/logic/life_cycle_manager.h"
 #include "text/unicode.h"
 
 #include "H2MOD/Modules/Shell/Config.h"

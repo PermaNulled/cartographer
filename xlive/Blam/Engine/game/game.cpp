@@ -147,7 +147,7 @@ void game_time_get_date_and_time(s_date_and_time* date_and_time)
 
 void game_direct_connect_to_session(XNKID kid, XNKEY key, const XNADDR* addr, int8 exe_type, int32 exe_version, int32 comp_version)
 {
-    auto handler = (c_game_life_cycle_handler_joining*)c_game_life_cycle_manager::get()->life_cycle_handlers[e_game_life_cycle::_life_cycle_joining];
+    auto handler = (c_game_life_cycle_handler_joining*)c_game_life_cycle_manager::get()->m_life_cycle_handlers[e_game_life_cycle::_life_cycle_joining];
     handler->joining_xnkid = kid;
     handler->joining_xnkey = key;
     handler->joining_xnaddr = *addr;
@@ -161,7 +161,7 @@ void game_direct_connect_to_session(XNKID kid, XNKEY key, const XNADDR* addr, in
         wchar_t local_usernames[k_number_of_users][XUSER_NAME_SIZE] = {};
         s_player_identifier local_identifiers[k_number_of_users];
         int valid_local_player_count = 0;
-        for (auto i = 0; i < 4; i++)
+        for (int32 i = 0; i < k_number_of_users; i++)
         {
             s_player_identifier temp_identifier;
             s_player_properties temp_properties;
@@ -173,7 +173,7 @@ void game_direct_connect_to_session(XNKID kid, XNKEY key, const XNADDR* addr, in
             }
         }
         user_interface_networking_reset_player_counts();
-        network_session_init_session(2, 1);
+        network_globals_configure_from_previous_state(2, 1);
         csmemset(&handler->player_identifiers, 0, sizeof(handler->player_identifiers));
         csmemcpy(&handler->player_identifiers, local_identifiers, sizeof(s_player_identifier) * valid_local_player_count);
         csmemcpy(&handler->player_names, local_usernames, sizeof(wchar_t) * 16 * valid_local_player_count);
@@ -202,7 +202,7 @@ void __cdecl game_initialize(void)
     real_math_reset_precision();
 
     s_game_systems* g_game_systems = get_game_systems();
-    for (size_t i = 0; i < 70; ++i)
+    for (int32 i = 0; i < 70; ++i)
     {
         g_game_systems[i].initialize_proc();
     }
@@ -306,7 +306,7 @@ void __cdecl game_initialize_for_new_map(s_game_options* options)
     game_info_initialize_for_new_map(options);
 
     s_game_systems* g_game_systems = get_game_systems();
-    for (uint32 i = 0; i < 70; i++)
+    for (int32 i = 0; i < 70; i++)
     {
         if (g_game_systems[i].reset_proc)
         {

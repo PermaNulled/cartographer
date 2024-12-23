@@ -6,7 +6,7 @@
 #include "networking/Transport/network_observer.h"
 #include "saved_games/game_variant.h"
 
-// ### TODO Cleanup
+/* enums */
 
 enum e_network_session_map_status : int32
 {
@@ -47,43 +47,53 @@ enum e_network_session_class
 	k_network_session_class_count = 0x3,
 };
 
+enum e_network_session_mode_count
+{
+	_network_session_mode_none = 0,
+	_network_session_mode_idle = 1,
+	_network_session_mode_in_game = 4,
+	_network_session_mode_migration_start = 6,
+	_network_session_mode_migration_joining = 7,
+	_network_session_mode_migration_disbanding = 9,
 
-// forward declarations
-struct c_network_session;
+	k_network_session_mode_count = 10
+};
+
+/* constants */
+
+#define k_network_maximum_sessions 2
+#define k_network_maximum_machines_per_session (k_maximum_players + 1)
+
+/* forward declarations */ 
+
+class c_network_session;
+
 struct s_session_membership;
 struct s_membership_player;
 struct s_membership_peer;
-struct s_session_observer_channel;
+struct s_session_peer;
 
-#define k_network_maximum_machines_per_session (k_maximum_players + 1)
-
+// THE FOLLOWING FUNCTIONS ARE NOW DEPRECATED, AND WILL BE REMOVED EVENTUALLY
+// WHEN PORTING IS FINISHED
+// USE/IMPLEMENT THE HELPER FUNCTIONS IN THE c_network_session CLASS !!!!!!
 namespace NetworkSession
 {
-	// network session getters and misc
-	c_network_session* GetNetworkSessions();
-	c_network_session* GetActiveNetworkSession();
-	bool GetActiveNetworkSession(c_network_session** outSession);
-	e_network_session_state GetLocalSessionState();
 	int32 GetPeerIndexFromNetworkAddress(const network_address* address);
 	bool GetMapFileLocation(wchar_t* buffer, size_t size);
 
 	bool LocalPeerIsSessionHost();
-	bool LocalPeerIsEstablishedClient();
 	bool LocalPeerIsSessionLeader();
 	bool LocalPeerIsEstablished();
 
 	// peer functions
 	int32 GetPeerCount();
 	int32 GetLocalPeerIndex();
-	bool IsPeerIndexLocal(int32 peer_index);
 	IN_ADDR GetLocalNetworkAddress();
 	void KickPeer(int32 peer_index);
 	void EndGame();
-	s_session_observer_channel* GetPeerObserverChannel(int32 peer_index);
 
 	// peer-player functions
 	int32 GetPeerIndex(datum player_index);
-	bool IsPlayerLocal(datum player_index);
 
 	// player functions
 	
@@ -107,22 +117,21 @@ namespace NetworkSession
 	void LeaveSession();
 }
 
-s_membership_peer* network_session_get_peer(int32 peer_index);
-
 #pragma pack(push, 1)
-struct s_session_observer_channel
+struct s_session_peer
 {
-	bool field_0;
-	bool field_1;
-	char pad[2];
-	int32 observer_index;
+	bool peer_valid;
+	bool is_remote_peer;
+	bool peer_needs_reestablishment;
+	uint8 gap_3;
+	int32 observer_channel_index;
 	int32 membership_update_number;
 	int32 parameters_update_number;
 	int32 virtual_couch_update_number;
 	int32 vote_update_number;
 	int32 field_18;
 };
-ASSERT_STRUCT_SIZE(s_session_observer_channel, 28);
+ASSERT_STRUCT_SIZE(s_session_peer, 28);
 
 struct s_session_virtual_couch
 {
@@ -232,14 +241,13 @@ struct s_session_membership
 	uint64 dedicated_server_xuid; // 0x78
 	int32 xbox_session_leader_peer_index; // 0x80
 	int32 peer_count; // 0x84
-	s_membership_peer peers[k_network_maximum_machines_per_session]; // 0x88
+	s_membership_peer membership_peers[k_network_maximum_machines_per_session]; // 0x88
 	int32 player_count; // 0x1254
 	uint32 players_active_mask; // 0x1258
 	s_membership_player players[k_maximum_players]; // 0x125C
 	uint32 unk;
 };
 ASSERT_STRUCT_SIZE(s_session_membership, 9328);
-
 
 struct s_session_interface_user
 {
@@ -261,13 +269,13 @@ struct s_session_interface_globals
 {
 	bool initialised;
 	uint8 gap_1;
-	wchar_t m_machine_name[16];
-	wchar_t m_session_name[32];
-	uint8 m_qos_active;
+	wchar_t machine_name[16];
+	wchar_t session_name[32];
+	uint8 qos_active;
 	uint8 gap_63;
 	uint8 gap_64[16];
-	uint32 m_upstream_bandwidth_bps;
-	uint32 m_downstream_bandwidth_bps;
+	uint32 upstream_bandwidth_bps;
+	uint32 downstream_bandwidth_bps;
 	uint8 gap_7C[8];
 	uint32 nat_type;
 	uint32 field_88;
@@ -284,15 +292,18 @@ struct s_session_interface_globals
 };
 ASSERT_STRUCT_SIZE(s_session_interface_globals, 0x638);
 
-struct c_network_session
+/* classes */
+
+class c_network_session
 {
+public:
 	void* vtbl;
-	void* p_network_message_gateway;
-	c_network_observer* p_network_observer;
-	void* session_manager_ptr;
-	uint32 text_chat;
-	int32 session_index;
-	int32 field_18;
+	void* m_network_message_gateway;
+	c_network_observer* m_network_observer;
+	void* m_session_manager;
+	uint32 field_10;
+	int32 m_session_index;
+	int32 m_session_type;
 	e_network_session_class m_session_class;
 	XNKID session_id;
 	wchar_t field_28[16];
@@ -301,20 +312,29 @@ struct c_network_session
 	char pad[3];
 	int32 xnkey_index;
 	int32 field_60;
-	int32 session_host_peer_index;
-	int32 elected_host_peer_index;
+	int32 m_session_host_peer_index;
+	int32 m_elected_host_peer_index;
 	uint32 field_6C;
-	s_session_membership membership[2]; // 0x70
-	s_session_virtual_couch virtual_couch[2];
-	s_session_vote voting_data[2]; // unused
+
+	s_session_membership m_session_membership;
+	s_session_membership m_session_transmitted_membership;
+	s_session_virtual_couch m_session_virtual_couch;
+	s_session_virtual_couch m_session_transmitted_virtual_couch;
+
+	/* unused and unfinished leftover voting system */
+	s_session_vote m_session_voting_data; 
+	s_session_vote m_session_transmitted_voting_data; 
+	
 	uint8 gap_4B84[64];
-	s_session_parameters parameters[2];
-	int32 local_peer_index;
-	s_session_observer_channel observer_channels[k_network_maximum_machines_per_session];
-	e_network_session_state local_session_state;
-	uint32 time_unk_2;
-	uint32 time_unk_3;
-	uint32 time_unk;
+	s_session_parameters m_session_parameters;
+	s_session_parameters m_session_transmitted_parameters;
+
+	int32 m_local_peer_index;
+	s_session_peer m_session_peers[k_network_maximum_machines_per_session];
+	e_network_session_state m_local_state;
+	uint32 field_73A4;
+	uint32 field_73A8;
+	uint32 field_73AC;
 	uint32 possible_new_peer_host_index;
 	uint32 field_73B4;
 	uint32 field_73B8;
@@ -371,22 +391,42 @@ struct c_network_session
 
 	s_membership_peer* get_peer_membership(int32 peer_index)
 	{
-		return &membership[0].peers[peer_index];
+		return &m_session_membership.membership_peers[peer_index];
 	}
 
 	s_membership_player* get_player_membership(datum player_index)
 	{
-		return &membership[0].players[DATUM_INDEX_TO_ABSOLUTE_INDEX(player_index)];
+		return &m_session_membership.players[DATUM_INDEX_TO_ABSOLUTE_INDEX(player_index)];
+	}
+
+	s_session_peer* get_session_peer(int32 peer_index)
+	{
+		return &m_session_peers[peer_index];
+	}
+
+	int32 get_peer_count() const
+	{
+		return m_session_membership.peer_count;
+	}
+
+	int32 get_player_count() const
+	{
+		return m_session_membership.player_count;
+	}
+
+	const wchar_t* get_player_name(datum player_index)
+	{
+		return get_player_membership(player_index)->properties[0].player_name;
 	}
 
 	int32 get_local_peer_index() const
 	{
-		return local_peer_index;
+		return m_local_peer_index;
 	}
 
 	int32 get_session_host_peer_index() const
 	{
-		return session_host_peer_index;
+		return m_session_host_peer_index;
 	}
 
 	bool peer_index_local_peer(int32 peer_index) const
@@ -394,35 +434,67 @@ struct c_network_session
 		return get_local_peer_index() == peer_index;
 	}
 
-	bool local_state_none() const
+	bool disconnected() const
 	{
-		return local_session_state == _network_session_state_none;
+		return m_local_state == _network_session_state_none;
 	}
 
-	bool local_state_established_client() const
+	bool leaving() const
 	{
-		return local_session_state == _network_session_state_peer_established
-			|| local_session_state == _network_session_state_peer_leaving;
+		bool result = false;
+
+		switch (m_local_state)
+		{
+		case _network_session_state_peer_join_abort:
+		case _network_session_state_peer_leaving:
+		case _network_session_state_host_disband:
+			result = true;
+			break;
+		case _network_session_state_host_handoff:
+		case _network_session_state_host_reestablish:
+			result = field_73A4;
+			break;
+		default:
+			break;
+		}
+
+		return result;
 	}
 
-	bool local_state_session_host() const
+	bool is_client() const
 	{
-		return local_session_state == _network_session_state_host_established
-			|| local_session_state == _network_session_state_host_disband
-			|| local_session_state == _network_session_state_host_handoff
-			|| local_session_state == _network_session_state_host_reestablish;
+		return m_local_state == _network_session_state_peer_established
+			|| m_local_state == _network_session_state_peer_leaving;
+	}
+
+	bool is_host() const
+	{
+		return m_local_state == _network_session_state_host_established
+			|| m_local_state == _network_session_state_host_disband
+			|| m_local_state == _network_session_state_host_handoff
+			|| m_local_state == _network_session_state_host_reestablish;
+	}
+
+	bool is_peer_local(int32 peer_index) const
+	{
+		return get_local_peer_index() == peer_index;
+	}
+
+	bool is_peer_session_host(int32 peer_index) const
+	{
+		return get_session_host_peer_index() == peer_index;
 	}
 
 	bool local_state_joining_session() const
 	{
-		return local_session_state == _network_session_state_peer_joining;
+		return m_local_state == _network_session_state_peer_joining;
 	}
 
-	bool local_state_established() const
+	bool established() const
 	{
 		bool result = false;
 
-		switch (local_session_state)
+		switch (m_local_state)
 		{
 		case _network_session_state_none:
 		case _network_session_state_peer_joining:
@@ -440,19 +512,23 @@ struct c_network_session
 		case _network_session_state_host_reestablish:
 			result = true;
 			break;
+		
+		default:
+			DISPLAY_ASSERT("unreachable");
+			break;
 		}
 
 		return result;
 	}
 
-	bool local_peer_session_leader() const
+	bool is_local_peer_session_leader() const
 	{
-		return membership[0].session_leader_peer_index == local_peer_index;
+		return m_session_membership.session_leader_peer_index == m_local_peer_index;
 	}
 
-	bool session_player_active(datum player_index) const
+	bool is_session_player_active(datum player_index) const
 	{
-		return TEST_BIT(membership[0].players_active_mask, DATUM_INDEX_TO_ABSOLUTE_INDEX(player_index));
+		return TEST_BIT(m_session_membership.players_active_mask, DATUM_INDEX_TO_ABSOLUTE_INDEX(player_index));
 	}
 
 	int32 get_peer_index_from_address(const network_address* address)
@@ -462,13 +538,18 @@ struct c_network_session
 
 	void request_membership_update()
 	{
-		this->membership[0].update_number++;
+		this->m_session_membership.update_number++;
 		this->local_membership_update_number++;
+	}
+
+	int32 session_mode() const
+	{
+		return m_session_parameters.session_mode;
 	}
 
 	void switch_player_team(datum player_index, e_game_team team_index)
 	{
-		if (local_state_session_host())
+		if (is_host())
 		{
 			get_player_membership(player_index)->properties[0].team_index = team_index;
 			request_membership_update();
@@ -480,26 +561,26 @@ struct c_network_session
 
 	const char* describe_network_protocol_type() const
 	{
-		static const char* network_protocols_str[] =
+		static const char* const k_network_protocols_text[] =
 		{
 			"<disconnected>",
 			"System-Link",
 			"LIVE",
 		};
 
-		return IN_RANGE(this->m_session_class, _network_session_class_offline, k_network_session_class_count - 1) ? network_protocols_str[this->m_session_class] : "<unknown>";
+		return IN_RANGE(this->m_session_class, _network_session_class_offline, k_network_session_class_count - 1) ? k_network_protocols_text[this->m_session_class] : "<unknown>";
 	}
 };
 ASSERT_STRUCT_SIZE(c_network_session, 31624);
-ASSERT_STRUCT_OFFSET(c_network_session, membership[0], 0x70);
-ASSERT_STRUCT_OFFSET(c_network_session, parameters[0], 0x4C60);
+ASSERT_STRUCT_OFFSET(c_network_session, m_session_membership, 0x70);
+ASSERT_STRUCT_OFFSET(c_network_session, m_session_parameters, 0x4C60);
 #pragma pack(pop)
+
+/* prototypes */
 
 s_session_interface_user* session_interface_get_local_user_properties(int32 user_index);
 
 void network_session_apply_patches();
-
-bool network_life_cycle_in_squad_session(c_network_session** out_active_session);
 
 void network_session_membership_update_local_players_teams();
 
@@ -508,4 +589,4 @@ bool network_session_interface_set_local_user_character_type(int32 user_index, e
 bool network_session_interface_get_local_user_identifier(int32 user_index, s_player_identifier* out_identifier);
 void network_session_interface_set_local_user_rank(int32 user_index, int8 rank);
 bool __cdecl network_session_interface_get_local_user_properties(int32 user_index, int32* out_controller_index, s_player_properties* out_properties, int32* out_player_voice, int32* out_player_text_chat);
-void __cdecl network_session_init_session(int32 a1, char a2);
+void __cdecl network_globals_configure_from_previous_state(int32 a1, bool a2);

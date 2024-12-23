@@ -12,7 +12,7 @@
 #include "interface/user_interface_globals.h"
 #include "main/levels.h"
 #include "main/level_definitions.h"
-#include "networking/Session/NetworkSession.h"
+#include "networking/logic/life_cycle_manager.h"
 #include "saved_games/game_variant.h"
 #include "tag_files/global_string_ids.h"
 #include "tag_files/tag_loader/tag_injection.h"

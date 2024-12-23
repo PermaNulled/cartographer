@@ -35,8 +35,8 @@ enum e_network_channel_state
 
 struct alignas(8) s_network_channel
 {
-	void* network_link;
-	void* network_message_gateway;
+	void* m_network_link;
+	void* m_network_message_gateway;
 	void* network_message_handler;
 	void* network_channel_config;
 	int32 network_connection_index;

@@ -266,24 +266,24 @@ void render_netdebug_text(void)
 {
 	if (ImGuiHandler::g_network_stats_overlay != _network_stats_display_none)
 	{
-		c_network_session* session;
-		if (NetworkSession::GetActiveNetworkSession(&session))
+		c_network_session* session = NULL;
+		if (network_life_cycle_in_squad_session(&session))
 		{
 			s_simulation_player_netdebug_data netdebug_data_default{};
 			s_simulation_player_netdebug_data* netdebug_data = &netdebug_data_default;
-			if (!session->local_state_session_host())
+			if (!session->is_host())
 			{
 				s_membership_peer* membership_peer = session->get_peer_membership(session->get_local_peer_index());
 
-				int32 channel_index = session->observer_channels[session->get_session_host_peer_index()].observer_index;
-				if (channel_index != NONE)
+				int32 observer_channel_index = session->m_session_peers[session->get_session_host_peer_index()].observer_channel_index;
+				if (observer_channel_index != NONE)
 				{
-					s_observer_channel* observer_channel = &session->p_network_observer->observer_channels[channel_index];
+					s_observer_channel* observer_channel = &session->m_network_observer->m_observer_channels[observer_channel_index];
 
 					netdebug_data->client_rtt_msec = observer_channel->net_rtt;
 					netdebug_data->client_packet_rate = observer_channel->net_rate_managed_stream * 10.f;
 					netdebug_data->client_throughput = (observer_channel->throughput_bps * 10.f) / 1024.f;
-					netdebug_data->client_packet_loss = observer_channel->field_440.average_values_in_window() * 100.f;
+					netdebug_data->client_packet_loss_percentage = observer_channel->field_440.average_values_in_window() * 100.f;
 
 					// NOT UPDATED IN REAL-TIME
 					//for (int32 i = 0; i < k_number_of_users; i++)
@@ -316,7 +316,7 @@ void render_netdebug_text(void)
 				netdebug_data->client_rtt_msec,
 				(real32)netdebug_data->client_packet_rate / 10.f,
 				((real32)netdebug_data->client_throughput / 10.f) * 1024.f,
-				netdebug_data->client_packet_loss
+				netdebug_data->client_packet_loss_percentage
 			);
 
 			draw_string_reset();
