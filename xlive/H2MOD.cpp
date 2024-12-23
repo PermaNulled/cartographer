@@ -555,10 +555,10 @@ uint16 __cdecl get_enabled_team_flags(c_network_session* session)
 	std::wstring selected_map_file_name;
 
 	// skip if we're not host, let the host control
-	if (!NetworkSession::LocalPeerIsSessionHost())
+	if (!session->is_host())
 		return default_teams_enabled_flags;
 
-	if (CustomVariantHandler::ContainsGameVariant(NetworkSession::GetGameVariantName(), _id_infection))
+	if (CustomVariantHandler::ContainsGameVariant(session->get_game_variant_name(), _id_infection))
 	{
 		// infection overrides H2Config
 		// TODO get infection_teams through the interface
@@ -571,7 +571,7 @@ uint16 __cdecl get_enabled_team_flags(c_network_session* session)
 				LOG_WARNING_FUNCW(" - perhaps current selected map - {} doesn't support these teams?? overriding anyway", selected_map_file_name.c_str());
 		}
 	}
-	else if (StrStrIW(NetworkSession::GetGameVariantName(), L"rvb") != NULL)
+	else if (StrStrIW(session->get_game_variant_name(), L"rvb") != NULL)
 	{
 		// same with rvb, overrides H2Config
 		new_teams_enabled_flags = red_versus_blue_teams;

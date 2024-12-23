@@ -424,6 +424,11 @@ public:
 		return m_local_peer_index;
 	}
 
+	const wchar_t* get_game_variant_name() const
+	{
+		return m_session_parameters.game_variant.variant_name;
+	}
+
 	int32 get_session_host_peer_index() const
 	{
 		return m_session_host_peer_index;

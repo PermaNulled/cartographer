@@ -152,13 +152,9 @@ namespace CustomVariantSettings
 
 		}
 
-		//Host Only
-		if (NetworkSession::LocalPeerIsSessionHost())
-		{
-			// *((_DWORD *)v1 + 94) = seconds_to_ticks_imprecise(1);
-			//Changing the argument passed to seconds_to_ticks_impercise.
-			WriteValue(Memory::GetAddress(0x55d01, 0x5e1f9), (BYTE)newVariantSettings->spawnProtection);
-		}
+		// *((_DWORD *)v1 + 94) = seconds_to_ticks_imprecise(1);
+		//Changing the argument passed to seconds_to_ticks_impercise.
+		WriteValue(Memory::GetAddress(0x55d01, 0x5e1f9), (BYTE)newVariantSettings->spawnProtection);
 	}
 	void ApplyCurrentSettings()
 	{
