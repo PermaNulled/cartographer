@@ -47,47 +47,47 @@ int32 __cdecl network_life_cycle_session_get_global_map_precache_status_hook(int
 		if (out_host_map_status)
 		{
 			*out_host_map_status = membership->membership_peers[session->m_session_host_peer_index].map_status;
+		}
 
-			result_map_status = _network_session_map_status_loaded;
-			result_precache_percentage = 100; // i don't think this is used anymore, it has been replaced by the loading screen in H2v from Xbox
+		result_map_status = _network_session_map_status_loaded;
+		result_precache_percentage = 100; // i don't think this is used anymore, it has been replaced by the loading screen in H2v from Xbox
 
-			for (int32 i = 0; i < membership->peer_count; i++)
+		for (int32 i = 0; i < membership->peer_count; i++)
+		{
+			// NOTE UPDATE 7/29/2021: now this checks if there's any peer that can load the map, instead of if there's any peer that cannot load the map
+			// *************
+
+			// now we only check our peer and session host peer, instead of all the membership_peers
+			// but make sure the game won't start if we have just 1 player that doesn't have the map
+			if (session->m_local_peer_index == i)
+				local_peer_map_status = membership->membership_peers[i].map_status;
+
+			if (session->m_session_host_peer_index == i)
+				host_peer_map_status = membership->membership_peers[i].map_status;
+
+			switch (membership->membership_peers[i].map_status)
 			{
-				// NOTE UPDATE 7/29/2021: now this checks if there's any peer that can load the map, instead of if there's any peer that cannot load the map
-				// *************
+			case _network_session_map_status_unable_to_precache:
+				result_precache_percentage = 0;
+				peer_count_with_map_status_unable_to_precache++;
+				break;
 
-				// now we only check our peer and session host peer, instead of all the membership_peers
-				// but make sure the game won't start if we have just 1 player that doesn't have the map
-				if (session->m_local_peer_index == i)
-					local_peer_map_status = membership->membership_peers[i].map_status;
+			case _network_session_map_status_precaching:
+				result_precache_percentage = MIN(membership->membership_peers[i].map_progress_percentage, result_precache_percentage); // get the least map precaching percentage
+				break;
 
-				if (session->m_session_host_peer_index == i)
-					host_peer_map_status = membership->membership_peers[i].map_status;
+			case _network_session_map_status_loaded:
+			case _network_session_map_status_precached:
+				peer_count_with_map_status_precached++;
+				break;
 
-				switch (membership->membership_peers[i].map_status)
-				{
-				case _network_session_map_status_unable_to_precache:
-					result_precache_percentage = 0;
-					peer_count_with_map_status_unable_to_precache++;
-					break;
+			case _network_session_map_status_downloading:
+				someone_downloading_map = true;
+				peer_count_with_map_status_downloading++;
+				break;
 
-				case _network_session_map_status_precaching:
-					result_precache_percentage = MIN(membership->membership_peers[i].map_progress_percentage, result_precache_percentage); // get the least map precaching percentage
-					break;
-
-				case _network_session_map_status_loaded:
-				case _network_session_map_status_precached:
-					peer_count_with_map_status_precached++;
-					break;
-
-				case _network_session_map_status_downloading:
-					someone_downloading_map = true;
-					peer_count_with_map_status_downloading++;
-					break;
-
-				default:
-					break;
-				}
+			default:
+				break;
 			}
 		}
 

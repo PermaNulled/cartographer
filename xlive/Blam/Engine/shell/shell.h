@@ -23,10 +23,10 @@ enum e_shell_command_line_flags : int32
 	_shell_command_line_flag_unk12, // some tag thing?
 	_shell_command_line_flag_unk13, // some tag thing?
 	_shell_command_line_flag_unk14, // some tag thing?
-	_shell_command_line_flag_custom_map_entry_test_map_name_instead_of_hash, // flag to test the map name instead of the hash of the custom map
-	_shell_command_line_flag_unk16,
+	_shell_command_line_flag_unk15,
+	_shell_command_line_flag_unk16, // fuzzer/automated testing? (sapien)
 	_shell_command_line_flag_xbox_live_silver_account, // if true, disables 'gold-only' features, like quickmatch etc
-	_shell_command_line_flag_unk18, // fuzzer/automated testing? (sapien)
+	_shell_command_line_flag_custom_map_entry_test_map_name_instead_of_hash, // flag to test the map name instead of the hash of the custom map
 	_shell_command_line_flag_ui_fast_test_no_start, // same as below but doesn't start a game
 	_shell_command_line_flag_ui_fast_test, // auto navigates the UI selecting the default option
 	_shell_command_line_flag_unk21, // player controls related, is checked when using a vehicle
