@@ -47,7 +47,7 @@ enum e_network_session_class
 	k_network_session_class_count = 0x3,
 };
 
-enum e_network_session_mode_count
+enum e_network_session_mode
 {
 	_network_session_mode_none = 0,
 	_network_session_mode_idle = 1,
