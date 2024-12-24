@@ -24,7 +24,7 @@ const wchar_t* k_map_download_source_text[k_language_count] =
 typedef int32(__cdecl* network_life_cycle_session_get_global_map_precache_status_t)(int32*, e_network_session_map_status*);
 network_life_cycle_session_get_global_map_precache_status_t p_network_life_cycle_session_get_global_map_precache_status;
 
-// allow hosts to start the game while other membership_peers didn't load the map
+// allow hosts to start the game while other peers didn't load the map
 // TODO: simplify and cleanup
 int32 __cdecl network_life_cycle_session_get_global_map_precache_status_hook(int32* out_lowest_load_percentage, e_network_session_map_status* out_host_map_status) {
 	// this just gets the current network_session, but has some extra misc checks
@@ -275,7 +275,7 @@ void MapManager::ApplyPatches() {
 		user_interface_data = Memory::GetAddress<void*>(0x9712C8);
 	}
 
-	// allow host to start the game, even if there are membership_peers that didn't load the map
+	// allow host to start the game, even if there are peers that didn't load the map
 	p_network_life_cycle_session_get_global_map_precache_status = (network_life_cycle_session_get_global_map_precache_status_t)DetourFunc(Memory::GetAddress<BYTE*>(0x1B1929, 0x197879), (BYTE*)network_life_cycle_session_get_global_map_precache_status_hook, 8);
 
 	DetourClassFunc(Memory::GetAddress<BYTE*>(0x1D76C5, 0x1BCD32), (BYTE*)game_life_cycle_get_map_load_status, 8);
