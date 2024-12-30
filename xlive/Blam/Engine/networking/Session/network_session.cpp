@@ -61,9 +61,11 @@ c_network_session* NetworkSession::GetNetworkSessions()
 
 c_network_session* NetworkSession::GetActiveNetworkSession()
 {
-	c_network_session* session = NULL;
-	network_life_cycle_in_squad_session(&session);
-	return session;
+	// ### FIXME replace this function wherever this is still used
+	// for now, return the pointer to the active squad session regardless to avoid crashing the game
+	/*c_network_session* session = NULL;
+	network_life_cycle_in_squad_session(&session);*/
+	return c_game_life_cycle_manager::get()->m_active_squad_session;
 }
 
 bool NetworkSession::LocalPeerIsSessionHost()
