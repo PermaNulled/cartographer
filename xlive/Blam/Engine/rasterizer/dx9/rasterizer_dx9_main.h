@@ -113,7 +113,7 @@ bool rasterizer_dx9_draw_primitive_up(
 
 bool __cdecl rasterizer_dx9_create_texture(uint32 width, uint32 height, int32 levels, uint32 usage, e_bitmap_data_format format, bool linear, IDirect3DTexture9** texture);
 
-void rasterizer_dx9_texture_stage_dimensions(uint8 stage, uint32 width, uint32 height);
+void rasterizer_dx9_texture_stage_dimensions(int16 stage, uint32 width, uint32 height);
 
 bool __cdecl rasterizer_dx9_device_set_texture(uint32 stage, IDirect3DTexture9* texture);
 

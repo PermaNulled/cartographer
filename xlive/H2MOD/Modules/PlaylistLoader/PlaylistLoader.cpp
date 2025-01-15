@@ -60,10 +60,10 @@ namespace playlist_loader
 
 		return false;
 	}
-	double custom_settings_real_check(playlist_entry* playlist_entry, wchar_t* value)
+	real32 custom_settings_real_check(playlist_entry* playlist_entry, wchar_t* value)
 	{
 		if (isFloat(value))
-			return std::stod(value);
+			return std::stof(value);
 
 		p_playlist_loader_invalid_entry(
 			playlist_entry,

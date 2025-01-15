@@ -408,7 +408,7 @@ void __cdecl rasterizer_dx9_set_target(e_rasterizer_target rasterizer_target, in
         d3d_surface = rasterizer_dx9_target_get_main_mip_surface(rasterizer_target);
         break;
     case _rasterizer_target_shadow_alias_swizzled:
-        d3d_surface = rasterizer_dx9_get_target_mip_surface(_rasterizer_target_shadow_alias_swizzled, mipmap_index);
+        d3d_surface = rasterizer_dx9_get_target_mip_surface(_rasterizer_target_shadow_alias_swizzled, (int16)mipmap_index);
         break;
     case _rasterizer_target_dynamic_gamma:
         DISPLAY_ASSERT("_rasterizer_target_dynamic_gamma is no longer available");
@@ -525,10 +525,10 @@ void __cdecl rasterizer_dx9_set_target(e_rasterizer_target rasterizer_target, in
             else if (global_window_parameters->is_texture_camera && !*hs_texture_camera_view_get())
             {
                 viewport_scale = PIN(*hs_texture_camera_scale_get(), 0.0625f, 1.f);
-                viewport.X = global_window_parameters->camera.viewport_bounds.left * viewport_scale;
-                viewport.Y = global_window_parameters->camera.viewport_bounds.top * viewport_scale;
-                viewport.Width = viewport_width * viewport_scale;
-                viewport.Height = viewport_height * viewport_scale;
+                viewport.X = (DWORD)(global_window_parameters->camera.viewport_bounds.left * viewport_scale);
+                viewport.Y = (DWORD)(global_window_parameters->camera.viewport_bounds.top * viewport_scale);
+                viewport.Width = (DWORD)(viewport_width * viewport_scale);
+                viewport.Height = (DWORD)(viewport_height * viewport_scale);
             }
             else
             {
@@ -779,8 +779,8 @@ bool __cdecl rasterizer_dx9_secondary_targets_initialize(void)
     D3DVIEWPORT9 d3d_viewport;
     dx9_globals->global_d3d_device->GetViewport(&d3d_viewport);
 
-    dx9_globals->global_d3d_sun_width = (d3d_viewport.Height * g_sun_size) * rasterizer_globals->sun_width_scale;
-    dx9_globals->global_d3d_sun_height = (d3d_viewport.Height * g_sun_size);
+    dx9_globals->global_d3d_sun_width = (uint32)((d3d_viewport.Height * g_sun_size) * rasterizer_globals->sun_width_scale);
+    dx9_globals->global_d3d_sun_height = (uint32)(d3d_viewport.Height * g_sun_size);
 
     result &=
         rasterizer_dx9_create_texture(

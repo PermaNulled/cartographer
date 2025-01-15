@@ -31,7 +31,7 @@ namespace CustomVariantSettings
 	}
 	bool __cdecl DecodeVariantSettings(c_bitstream* stream, int a2, s_variant_settings* data)
 	{
-		double gravity, gamespeed;
+		real32 gravity, gamespeed;
 		stream->read_raw_data("gravity", &gravity, sizeof(gravity) * CHAR_BIT);
 		data->gravity = gravity;
 		stream->read_raw_data("game speed", &gamespeed, sizeof(gamespeed) * CHAR_BIT);
@@ -41,7 +41,7 @@ namespace CustomVariantSettings
 		data->explosionPhysics = stream->read_bool("explosion physics");
 		data->hillRotation = (e_hill_rotation)stream->read_integer("hill rotation", 8);
 		data->infiniteGrenades = stream->read_bool("infinite grenades");
-		data->forced_fov = stream->read_integer("forced field of view", sizeof(data->forced_fov) * CHAR_BIT);
+		data->forced_fov = (uint8)stream->read_integer("forced field of view", sizeof(data->forced_fov) * CHAR_BIT);
 		return stream->error_occured() == false;
 	}
 

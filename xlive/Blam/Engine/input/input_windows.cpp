@@ -4,14 +4,13 @@
 #include "input_abstraction.h"
 #include "controllers.h"
 
-#include "game/game.h"
-#include "shell/shell_windows.h"
-
 #include "interface/user_interface_controller.h"
-#include "render/render.h"
+#include "shell/shell_windows.h"
 
 extern input_device** g_xinput_devices;
 extern s_input_abstraction_globals* input_abstraction_globals;
+
+/* globals */
 
 bool g_should_offset_gamepad_indices = false;
 bool g_notified_to_change_mapping = false;
@@ -19,10 +18,13 @@ uint32 input_device_change_delay_timer = NULL;
 s_input_globals* input_globals;
 bool* g_input_windows_request_terminate;
 
+/* constants */
+
 XINPUT_VIBRATION g_vibration_state[k_number_of_controllers]{};
 real32 g_rumble_factor = 1.0f;
 
-/* forward declarations*/
+/* prototypes */
+
 int compare_device_compatibility(const void* p1, const void* p2);
 int compare_device_ports(const void* p1, const void* p2);
 void input_windows_update_device_mapping();
@@ -254,10 +256,10 @@ void __cdecl input_set_gamepad_rumbler_state(int16 gamepad_index, uint16 left, u
 	ASSERT(VALID_INDEX(gamepad_index, k_number_of_controllers));
 
 	XINPUT_VIBRATION state = { left, right };
-	XINPUT_VIBRATION state_none = { 0, 0 };
+	const XINPUT_VIBRATION state_none = { 0, 0 };
 
-	state.wLeftMotorSpeed *= g_rumble_factor;
-	state.wRightMotorSpeed *= g_rumble_factor;
+	state.wLeftMotorSpeed = (WORD)(state.wLeftMotorSpeed * g_rumble_factor);
+	state.wRightMotorSpeed = (WORD)(state.wRightMotorSpeed * g_rumble_factor);
 
 	bool enabled = user_interface_controller_get_rumble_enabled((e_controller_index)gamepad_index);
 	g_vibration_state[gamepad_index] = (enabled ? state : state_none);

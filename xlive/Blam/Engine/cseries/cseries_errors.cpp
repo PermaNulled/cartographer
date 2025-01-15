@@ -13,7 +13,7 @@ void error(int32 priority, const char* format, ...)
 	va_list va_args;
 	va_start(va_args, format);
 	char string[1024];
-	csnprintf(string, NUMBEROF(string), NUMBEROF(string), format, va_args);
+	vsnprintf(string, NUMBEROF(string), NUMBEROF(string), format, va_args);
 	error_internal(0, priority, string/*, va_args*/);
 	va_end(va_args);
 #endif
@@ -26,7 +26,7 @@ void error(int32 category, int32 priority, const char* format, ...)
 	va_list va_args;
 	va_start(va_args, format);
 	char string[1024];
-	csnprintf(string, NUMBEROF(string), NUMBEROF(string), format, va_args);
+	vsnprintf(string, NUMBEROF(string), NUMBEROF(string), format, va_args);
 	error_internal(category, priority, string/*, va_args*/);
 	va_end(va_args);
 #endif

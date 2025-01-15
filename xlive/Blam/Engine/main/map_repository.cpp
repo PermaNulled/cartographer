@@ -360,8 +360,8 @@ void __thiscall c_custom_map_manager::load_custom_map_data_cache()
 	if (m_custom_map_file_data_cache != nullptr)
 		delete[] m_custom_map_file_data_cache;
 
-	this->m_custom_map_file_data_cache		= custom_map_cache_file_header;
-	this->m_map_count					= custom_map_cache_file_header->entry_count;
+	this->m_custom_map_file_data_cache = custom_map_cache_file_header;
+	this->m_map_count = (uint16)custom_map_cache_file_header->entry_count;
 	this->m_new_custom_map_entry_list_buffer	
 		= get_custom_map_entry_list_from_header(custom_map_cache_file_header);
 

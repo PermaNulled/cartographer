@@ -265,9 +265,9 @@ string_id c_model_animation::get_string_id(void) const
 int32 c_model_animation_graph::find_node(string_id string) const
 {
 	int16 node_count = this->get_node_count();
-	for (int16 i = 0; i < node_count; ++i)
+	for (int32 i = 0; i < node_count; ++i)
 	{
-		if (string == this->get_node(i)->name)
+		if (string == this->get_node((uint8)i)->name)
 		{
 			return i;
 		}
@@ -281,7 +281,7 @@ int32 c_model_animation_graph::find_node_with_flags(e_node_model_flags flags) co
 	int16 node_count = this->get_node_count();
 	for (int32 i = 0; i < node_count; ++i)
 	{
-		if ((this->get_node(i)->model_flags & flags) == flags)
+		if ((this->get_node((uint8)i)->model_flags & flags) == flags)
 		{
 			return i;
 		}

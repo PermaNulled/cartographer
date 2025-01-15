@@ -13,6 +13,8 @@
 #define ERROR_CODE_TAKEN_USERNAME -6
 #define ERROR_CODE_BANNED_EMAIL_DOMAIN -7
 
+const char k_user_name_string[] = "username=";
+
 // TODO (Carefully) Cleanup and move
 
 static int InterpretMasterCreate(char* response_content) {
@@ -36,8 +38,8 @@ static int InterpretMasterCreate(char* response_content) {
 			addDebugText("Return code is: %d", tempint1);
 			result = tempint1;
 		}
-		else if (strstr(fileLine, "username=")) {
-			char* tempName = fileLine + strlen("username=");
+		else if (strstr(fileLine, k_user_name_string)) {
+			char* tempName = fileLine + NUMBEROF(k_user_name_string) - 1;
 			while (isspace(*tempName)) {
 				tempName++;
 			}

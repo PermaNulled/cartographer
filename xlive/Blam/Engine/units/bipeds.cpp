@@ -57,12 +57,12 @@ void __cdecl biped_offset_first_person_camera(const real_vector3d* camera_forwar
             }
             else
             {
-                v1 = M_PI_2 - acosf(-camera_forward->k);
+                v1 = (real32)M_PI_2 - acosf(-camera_forward->k);
             }
         }
         else
         {
-            v1 = M_PI_2;
+            v1 = (real32)M_PI_2;
         }
 
         ASSERT(angle_range > 0.f);

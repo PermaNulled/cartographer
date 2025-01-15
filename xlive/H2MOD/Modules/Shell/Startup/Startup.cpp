@@ -4,6 +4,7 @@
 #include "../Config.h"
 #include "../H2MODShell.h"
 
+#include "cseries/cseries_strings.h"
 #include "cseries/cseries_windows_debug_pc.h"
 #include "shell/shell.h"
 #include "shell/shell_windows.h"
@@ -17,6 +18,10 @@
 #include "Util/filesys.h"
 #include "Util/hash.h"
 
+#include <io.h>
+
+const wchar_t* k_client_process_name = L"Halo2Client";
+const wchar_t* k_server_process_name = L"H2Server";
 
 namespace filesystem = std::filesystem;
 
@@ -37,9 +42,6 @@ h2log *onscreendebug_log = nullptr;
 
 // Console logger, receives output from all loggers
 h2log *console_log = nullptr;
-
-// Voice chat logger
-h2log* voice_log = nullptr;
 
 wchar_t* H2ProcessFilePath = 0;
 wchar_t* H2AppDataLocal = 0;
@@ -74,8 +76,8 @@ bool configureXinput() {
 
 			char xinputName[_MAX_PATH];
 			char xinputdir[_MAX_PATH];
-			sprintf(xinputdir, "xinput/p%02d", _Shell::GetInstanceId());
-			sprintf(xinputName, "%s/xinput9_1_0.dll", xinputdir);
+			csprintf(xinputdir, NUMBEROF(xinputdir), "xinput/p%02d", _Shell::GetInstanceId());
+			csprintf(xinputName, NUMBEROF(xinputdir), "%s/xinput9_1_0.dll", xinputdir);
 
 			/* Creates a directory and displays error if it fails */
 			auto create_dir = [=](const std::string &path) -> bool {
@@ -154,7 +156,12 @@ bool configureXinput() {
 				}
 
 				int len_to_write = 2;
-				BYTE assmXinputDuraznoNameEdit[] = { 0x30 + (_Shell::GetInstanceId() / 10), 0x30 + (_Shell::GetInstanceId() % 10), 0x30 + (_Shell::GetInstanceId() % 10) };
+				uint8 assmXinputDuraznoNameEdit[] = 
+				{ 
+					(uint8)(0x30 + (_Shell::GetInstanceId() / 10)),
+					(uint8)(0x30 + (_Shell::GetInstanceId() % 10)),
+					(uint8)(0x30 + (_Shell::GetInstanceId() % 10))
+				};
 				if (xinput_unicode[xinput_index]) {
 					assmXinputDuraznoNameEdit[1] = 0x00;
 					len_to_write = 3;
@@ -247,28 +254,37 @@ CRITICAL_SECTION log_section;
 
 // use only after initLocalAppData has been called
 // by default useAppDataLocalPath is set to true, if not specified
-std::wstring prepareLogFileName(const std::wstring &logFileName, bool useAppDataLocalPath) {
-	std::wstring filename = (useAppDataLocalPath ? H2AppDataLocal : L"");
-	std::wstring processName(Memory::IsDedicatedServer() ? L"H2Server" : L"Halo2Client");
-	std::wstring folders(L"logs\\" + processName + L"\\instance" + std::to_wstring(_Shell::GetInstanceId()));
-	filename += folders;
+void prepareLogFileName(const wchar_t* logFileName, c_static_wchar_string<MAX_PATH>* path, bool useAppDataLocalPath) {
+	const wchar_t* process_name = Memory::IsDedicatedServer() ? k_server_process_name : k_client_process_name;
+	
+	path->set(useAppDataLocalPath ? H2AppDataLocal : L"");
+
+	wchar_t instance_string[3] = {};
+	swprintf(instance_string, NUMBEROF(instance_string), L"%d", _Shell::GetInstanceId());
+	
+	c_static_wchar_string<MAX_PATH> folders;
+	folders.append(L"logs\\");
+	folders.append(process_name);
+	folders.append(L"\\instance");
+	folders.append(instance_string);
+
+	path->append(folders.get_string());
+
 	// try making logs directory
-	if (!filesystem::create_directories(filename) && !filesystem::is_directory(filesystem::status(filename)))
+	if (!filesystem::create_directories(path->get_string()) && !filesystem::is_directory(filesystem::status(path->get_string())))
 	{
 		// try locally if we didn't already
 		if (useAppDataLocalPath
-			&& filesystem::create_directories(folders) || filesystem::is_directory(filesystem::status(folders)))
-			filename = folders;
+			&& filesystem::create_directories(folders.get_string()) || filesystem::is_directory(filesystem::status(folders.get_string())))
+			path->set(folders.get_string());
 		else
-			filename = L""; // fine then
+			path->set(L""); // fine then
 	}
-	filename += L"\\" + logFileName + L".log";
-	return filename;
-}
 
-void ServerStartupFixes()
-{
-	
+	path->append(L"\\");
+	path->append(logFileName);
+	path->append(L".log");
+	return;
 }
 
 ///Before the game window appears
@@ -342,16 +358,18 @@ void InitH2Startup() {
 	bool should_enable_console_log = H2Config_debug_log && H2Config_debug_log_console;
 	console_log = h2log::create_console("CONSOLE MAIN", should_enable_console_log, H2Config_debug_log_level);
 
-	xlive_log = h2log::create("XLive", prepareLogFileName(L"h2xlive"), H2Config_debug_log, H2Config_debug_log_level);
+	c_static_wchar_string<MAX_PATH> path;
+	prepareLogFileName(L"h2xlive", &path);
+	xlive_log = h2log::create("XLive", path.get_string(), H2Config_debug_log, H2Config_debug_log_level);
 	LOG_DEBUG_XLIVE(DLL_VERSION_STR);
-	h2mod_log = h2log::create("H2MOD", prepareLogFileName(L"h2mod"), H2Config_debug_log, H2Config_debug_log_level);
+
+	prepareLogFileName(L"h2mod", &path);
+	h2mod_log = h2log::create("H2MOD", path.get_string(), H2Config_debug_log, H2Config_debug_log_level);
 	LOG_DEBUG_GAME(DLL_VERSION_STR);
-	network_log = h2log::create("Network", prepareLogFileName(L"h2network"), H2Config_debug_log, H2Config_debug_log_level);
+	
+	prepareLogFileName(L"h2network", &path);
+	network_log = h2log::create("Network", path.get_string(), H2Config_debug_log, H2Config_debug_log_level);
 	LOG_DEBUG_NETWORK(DLL_VERSION_STR);
-#if COMPILE_WITH_VOICE
-	voice_log = h2log::create("Voice", prepareLogFileName(L"voicechat"), H2Config_debug_log, H2Config_debug_log_level);
-	LOG_DEBUG(voice_log, DLL_VERSION_STR);
-#endif
 
 	//checksum_log = h2log::create("Checksum", prepareLogFileName(L"checksum"), true, 0);
 	LeaveCriticalSection(&log_section);

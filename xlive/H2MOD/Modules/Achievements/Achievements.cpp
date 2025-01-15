@@ -79,7 +79,7 @@ void GetAchievements(unsigned long long xuid)
 		achievementList.clear();
 		for (auto& achievement : document["achievements"].GetArray())
 		{
-			int id = std::stoll(achievement.GetString());
+			int id = (int)std::stoll(achievement.GetString());
 			achievementList[id] = 1;
 		}
 	}

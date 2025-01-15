@@ -2,13 +2,13 @@
 #include "GunGame.h"
 
 #include "game/game.h"
-#include "networking/logic/life_cycle_manager.h"
+#include "game/players.h"
 #include "units/units.h"
 #include "H2MOD.h"
 
 // TODO(PermaNull): Add additional levels with dual weilding
 
-datum k_level_weapons[15] =
+e_weapons_datum_index k_level_weapons[15] =
 {
 	e_weapons_datum_index::energy_blade_useless,
 	e_weapons_datum_index::needler,
@@ -148,18 +148,21 @@ void GunGame::OnPlayerSpawn(ExecTime execTime, datum playerIdx)
 
 				LOG_TRACE_GAME(L"[H2Mod-GunGame]: {} - player index: {}, player name: {1} - Level: {2}", __FUNCTIONW__, absPlayerIdx, s_player::get_name(playerIdx), level);
 
-				datum currentWeapon = k_level_weapons[level];
+				const datum currentWeapon = (datum)k_level_weapons[level];
 
-				if (level < 15) {
-					call_give_player_weapon(absPlayerIdx, currentWeapon, 1);
-				}
-				else if (level == 15) {
+				if (level == 15)
+				{
 					LOG_TRACE_GAME(L"[H2Mod-GunGame]: {} - {} on frag grenade level!", __FUNCTIONW__, s_player::get_name(playerIdx));
 					s_player::set_player_unit_grenade_count(playerIdx, _unit_grenade_human_fragmentation, 99, true);
 				}
-				else if (level == 16) {
+				else if (level == 16)
+				{
 					LOG_TRACE_GAME(L"[H2Mod-GunGame]: {} - {} on plasma grenade level!", __FUNCTIONW__, s_player::get_name(playerIdx));
 					s_player::set_player_unit_grenade_count(playerIdx, _unit_grenade_covenant_plasma, 99, true);
+				}
+				else
+				{
+					call_give_player_weapon(absPlayerIdx, currentWeapon, 1);
 				}
 			}
 		}
@@ -193,7 +196,7 @@ bool GunGame::c_game_statborg__adjust_player_stat(ExecTime execTime, c_game_stat
 		{
 			LOG_TRACE_GAME(L"[H2Mod-GunGame]: {} - player index: {}, player name: {}", __FUNCTIONW__, absPlayerIdx, s_player::get_name(player_datum));
 
-			int level = GunGame::gungamePlayers[playerId];
+			int32 level = GunGame::gungamePlayers[playerId];
 			level++;
 
 			if (level > 16)
@@ -203,24 +206,24 @@ bool GunGame::c_game_statborg__adjust_player_stat(ExecTime execTime, c_game_stat
 
 			LOG_TRACE_GAME(L"[H2Mod-GunGame]: {} - player index: {} - new level: {} ", __FUNCTIONW__, absPlayerIdx, level);
 
-			if (level < 15) {
-				LOG_TRACE_GAME(L"[H2Mod-GunGame]: {} - {} on level {} giving them weapon...", __FUNCTIONW__, s_player::get_name(player_datum), level);
-
-				datum LevelWeapon = k_level_weapons[level];
-				s_player::set_player_unit_grenade_count(player_datum, _unit_grenade_human_fragmentation, 0, true);
-				s_player::set_player_unit_grenade_count(player_datum, _unit_grenade_covenant_plasma, 0, true);
-				call_give_player_weapon(absPlayerIdx, LevelWeapon, 1);
-			}
-
-			else if (level == 15) {
+			if (level == 15)
+			{
 				LOG_TRACE_GAME(L"[H2Mod-GunGame]: {} - {} Level 15 - Frag Grenades!", __FUNCTIONW__, s_player::get_name(player_datum));
 				s_player::set_player_unit_grenade_count(player_datum, _unit_grenade_human_fragmentation, 99, true);
 			}
-
-			else if (level == 16) {
+			else if (level == 16)
+			{
 				LOG_TRACE_GAME(L"[H2Mod-GunGame]: {} - {} Level 16 - Plasma Grenades!", __FUNCTIONW__, s_player::get_name(player_datum));
 				s_player::set_player_unit_grenade_count(player_datum, _unit_grenade_human_fragmentation, 0, true);
 				s_player::set_player_unit_grenade_count(player_datum, _unit_grenade_covenant_plasma, 99, true);
+			}
+			else
+			{
+				LOG_TRACE_GAME(L"[H2Mod-GunGame]: {} - {} on level {} giving them weapon...", __FUNCTIONW__, s_player::get_name(player_datum), level);
+				const datum weapon = (datum)k_level_weapons[level];
+				s_player::set_player_unit_grenade_count(player_datum, _unit_grenade_human_fragmentation, 0, true);
+				s_player::set_player_unit_grenade_count(player_datum, _unit_grenade_covenant_plasma, 0, true);
+				call_give_player_weapon(absPlayerIdx, weapon, 1);
 			}
 		}
 

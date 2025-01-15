@@ -10,6 +10,14 @@
 #include "XLive/xnet/upnp.h"
 
 #define MASTER_STATE_STR_SIZE 256
+
+const char k_login_code_secondary_string[] = "login_code_secondary=";
+const char k_login_external_addr_string[] = "login_external_addr=";
+const char k_login_master_relay_ip_string[] = "login_master_relay_ip=";
+const char k_login_token_string[] = "login_token=";
+const char k_login_username_string[] = "login_username=";
+const char k_login_ab_online_string[] = "login_abOnline=";
+
 int masterState = -1;
 char* masterStateStr = NULL;
 bool AccountEdit_remember = true;
@@ -159,8 +167,8 @@ static int InterpretMasterLogin(char* response_content, char* prev_login_token) 
 			addDebugText("Login code is: %d", tempint1);
 			result = tempint1;
 		}
-		else if (strstr(fileLine, "login_code_secondary=")) {
-			char* tempName = fileLine + strlen("login_code_secondary=");
+		else if (strstr(fileLine, k_login_code_secondary_string)) {
+			char* tempName = fileLine + NUMBEROF(k_login_code_secondary_string) - 1;
 			while (isspace(*tempName)) {
 				tempName++;
 			}
@@ -177,8 +185,8 @@ static int InterpretMasterLogin(char* response_content, char* prev_login_token) 
 				addDebugText("Login Code Secondary is: %s", tempstr1);
 			}
 		}
-		else if (strstr(fileLine, "login_external_addr=")) {
-			char* tempName = fileLine + strlen("login_external_addr=");
+		else if (strstr(fileLine, k_login_external_addr_string)) {
+			char* tempName = fileLine + NUMBEROF(k_login_external_addr_string) - 1;
 			while (isspace(*tempName)) {
 				tempName++;
 			}
@@ -200,8 +208,8 @@ static int InterpretMasterLogin(char* response_content, char* prev_login_token) 
 				xnaddr = resolvedAddr;
 			}
 		}
-		else if (strstr(fileLine, "login_master_relay_ip=")) {
-			char* tempName = fileLine + strlen("login_master_relay_ip=");
+		else if (strstr(fileLine, k_login_master_relay_ip_string)) {
+			char* tempName = fileLine + NUMBEROF(k_login_master_relay_ip_string) - 1;
 			while (isspace(*tempName)) {
 				tempName++;
 			}
@@ -226,8 +234,8 @@ static int InterpretMasterLogin(char* response_content, char* prev_login_token) 
 				H2Config_master_port_relay = tempint1;
 			}
 		}
-		else if (strstr(fileLine, "login_token=")) {
-			char* tempName = fileLine + strlen("login_token=");
+		else if (strstr(fileLine, k_login_token_string)) {
+			char* tempName = fileLine + NUMBEROF(k_login_token_string) - 1;
 			while (isspace(*tempName)) {
 				tempName++;
 			}
@@ -245,8 +253,8 @@ static int InterpretMasterLogin(char* response_content, char* prev_login_token) 
 				strncpy(login_token, tempstr1, 32 + 1);
 			}
 		}
-		else if (strstr(fileLine, "login_username=")) {
-			char* tempName = fileLine + strlen("login_username=");
+		else if (strstr(fileLine, k_login_username_string)) {
+			char* tempName = fileLine + NUMBEROF(k_login_username_string) - 1;
 			while (isspace(*tempName)) {
 				tempName++;
 			}
@@ -289,8 +297,8 @@ static int InterpretMasterLogin(char* response_content, char* prev_login_token) 
 				strncpy(machineUID, tempstr1, 12 + 1);
 			}
 		}
-		else if (strstr(fileLine, "login_abOnline=")) {
-			char* tempName = fileLine + strlen("login_abOnline=");
+		else if (strstr(fileLine, k_login_ab_online_string)) {
+			char* tempName = fileLine + NUMBEROF(k_login_ab_online_string) - 1;
 			while (isspace(*tempName)) {
 				tempName++;
 			}

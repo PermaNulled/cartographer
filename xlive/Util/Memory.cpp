@@ -1,6 +1,20 @@
 #include "stdafx.h"
 #include "Memory.h"
 
+enum H2Type : int
+{
+	Invalid = -1,
+	UnsupportedVersion,
+	H2Game,
+	H2Server,
+};
+
+struct ProcessInfo
+{
+	HMODULE base;
+	H2Type process_type;
+};
+
 DWORD Memory::baseAddress;
 bool Memory::dedicatedServer;
 

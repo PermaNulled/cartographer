@@ -22,7 +22,6 @@
 
 #ifndef NDEBUG
 #include "H2MOD/Modules/RenderHooks/RenderHooks.h"
-#include "H2MOD/Utils/Utils.h"
 #endif
 
 /* constants */

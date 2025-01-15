@@ -467,8 +467,8 @@ void __cdecl draw_hud_bitmap_widget(int32 local_render_user_index, s_new_hud_tem
 			render_ingame_user_interface_hud_element_hook(
 				final_location.x,
 				final_location.y,
-				bitmap_size.x,
-				bitmap_size.y,
+				(int16)bitmap_size.x,
+				(int16)bitmap_size.y,
 				hud_scale,
 				theta_result,
 				bitmap_widget->bitmap.index,
@@ -487,8 +487,8 @@ void __cdecl draw_hud_bitmap_widget(int32 local_render_user_index, s_new_hud_tem
 			render_ingame_user_interface_hud_element_hook(
 				(bitmap_size.x * hud_scale) + final_location.x,
 				final_location.y,
-				bitmap_size.x,
-				bitmap_size.y,
+				(int16)bitmap_size.x,
+				(int16)bitmap_size.y,
 				hud_scale,
 				theta_result,
 				bitmap_widget->bitmap.index,
@@ -509,8 +509,8 @@ void __cdecl draw_hud_bitmap_widget(int32 local_render_user_index, s_new_hud_tem
 			render_ingame_user_interface_hud_element_hook(
 				final_location.x,
 				bitmap_size.y * hud_scale + final_location.y,
-				bitmap_size.x,
-				bitmap_size.y,
+				(int16)bitmap_size.x,
+				(int16)bitmap_size.y,
 				hud_scale,
 				theta_result,
 				bitmap_widget->bitmap.index,
@@ -529,8 +529,8 @@ void __cdecl draw_hud_bitmap_widget(int32 local_render_user_index, s_new_hud_tem
 			render_ingame_user_interface_hud_element_hook(
 				(bitmap_size.x * hud_scale) + final_location.x,
 				bitmap_size.y * hud_scale + final_location.y,
-				bitmap_size.x,
-				bitmap_size.y,
+				(int16)bitmap_size.x,
+				(int16)bitmap_size.y,
 				hud_scale,
 				theta_result,
 				bitmap_widget->bitmap.index,
@@ -653,7 +653,7 @@ void draw_hud_text_get_string(s_draw_hud_widget_input_results* widget_function_r
 
 void __cdecl draw_hud_text_widget(uint32 local_render_user_index, s_new_hud_temporary_user_state* user_state, s_hud_text_widget_definition* text_widget, s_draw_hud_widget_input_results* widget_function_results)
 {
-	if (!text_widget->string.is_valid() || text_widget->shader.index == NONE)
+	if (!text_widget->string != 0 || text_widget->shader.index == NONE)
 		return;
 
 	wchar_t widget_string[512]{};
@@ -712,8 +712,8 @@ void __cdecl draw_hud_text_widget(uint32 local_render_user_index, s_new_hud_temp
 		int32 text_height = rectangle2d_height(&draw_string_bounds);
 		real32 calc_text_height = (text_height * *get_primary_hud_scale()) * scale_result.y;
 
-		int32 ceil_text_width = ceil(calc_text_width);
-		int32 ceil_text_height = ceil(calc_text_height);
+		int32 ceil_text_width = (int32)ceil(calc_text_width);
+		int32 ceil_text_height = (int32)ceil(calc_text_height);
 
 		draw_string_set_player_color(global_real_argb_white);
 		draw_string_set_shadow_color(global_real_argb_black);
@@ -724,7 +724,7 @@ void __cdecl draw_hud_text_widget(uint32 local_render_user_index, s_new_hud_temp
 			text_bounds.left = (int16)(final_location.x - (real32)(ceil_text_width >> 1));
 			text_bounds.top = (int16)final_location.y;
 			text_bounds.right = (int16)(final_location.x + (real32)(ceil_text_width - (ceil_text_width >> 1)));
-			text_bounds.bottom = (int16)ceil_text_height + final_location.y;
+			text_bounds.bottom = (int16)(ceil_text_height + final_location.y);
 			break;
 		case text_justification_right:
 			text_bounds.left = (int16)(final_location.x - ceil_text_width);

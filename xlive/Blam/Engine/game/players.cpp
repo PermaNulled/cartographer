@@ -3,7 +3,6 @@
 
 #include "game/game.h"
 #include "game/game_engine.h"
-#include "game/game_engine_util.h"
 #include "game/game_globals.h"
 #include "simulation/game_interface/simulation_game_action.h"
 #include "units/units.h"
@@ -546,7 +545,7 @@ void __cdecl player_find_action_context(datum player_datum, s_player_interaction
         {
             // Search 1 includes weapons
             // Search 2 excludes weapons
-            const uint32 search_types[2]
+            const int32 search_types[2]
             {
                 _object_mask_weapon,
                 ~_object_mask_weapon
@@ -559,16 +558,16 @@ void __cdecl player_find_action_context(datum player_datum, s_player_interaction
             };
 
             // Perform the two searches
-            for (uint8 search_num = 0; search_num < 2; ++search_num)
+            for (uint8 search_num = 0; search_num < NUMBEROF(search_types); ++search_num)
             {
-                const uint32 search_type = search_types[search_num];
+                const int32 search_type = search_types[search_num];
                 const real32 search_radius = search_radius_types[search_num];
 
-                const uint32 objects_to_ignore = _object_mask_garbage | _object_mask_projectile | _object_mask_sound_scenery | _object_mask_creature;
+                const int32 objects_to_ignore = _object_mask_garbage | _object_mask_projectile | _object_mask_sound_scenery | _object_mask_creature;
 
                 datum nearby_objects[64];
 
-                const int16 number_of_initial_objects = object_search_for_objects_in_radius(
+                const int16 number_of_initial_objects = (int16)object_search_for_objects_in_radius(
                     0,
                     (search_type & ~objects_to_ignore),
                     &player_unit->unit.object.location,

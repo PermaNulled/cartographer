@@ -242,7 +242,7 @@ void __cdecl object_build_render_cache_and_info(
         object_get_model_node_data(
             object_index,
             info->first_person,
-            render_model_storage_index,
+            (int16)render_model_storage_index,
             &flags,
             &info->object_index[render_model_storage_index],
             &info->render_model_tag_defs[render_model_storage_index],
@@ -300,7 +300,7 @@ void __cdecl object_build_render_cache_and_info(
             &info->field_75[16 * render_model_storage_index]
             );
 
-        info->field_2C[render_model_storage_index] = unk_count1;
+        info->field_2C[render_model_storage_index] = (uint8)unk_count1;
         info->rasterizer_pool_offsets[render_model_storage_index] = NONE;
 
         if (!object_is_cached || info->first_person)

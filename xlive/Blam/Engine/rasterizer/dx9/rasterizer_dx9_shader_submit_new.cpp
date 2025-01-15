@@ -282,7 +282,7 @@ void c_shader_submission_interface_new::stage_texture(
             }
 
             bitmap = pp_def->bitmap_get(bitmap_index);
-            rasterizer_dx9_set_texture_direct(stage, bitmap->bitmap_group, bitmap->bitmap_index, 0.f);
+            rasterizer_dx9_set_texture_direct(stage, bitmap->bitmap_group, (int16)bitmap->bitmap_index, 0.f);
             continue_staging = false;
             break;
 
@@ -314,9 +314,10 @@ void __cdecl rasterizer_shader_level_of_detail_bias_update(void)
 	return;
 }
 
-void __cdecl rasterizer_shader_submit(datum shader_index, int32 a2, int32 a3, int32 a4, int32 a5, int32 a6)
+void __cdecl rasterizer_shader_submit(datum shader_index, int32 a2, int32 render_layer, int32 a4, int32 a5, real32 z_far)
 {
-    INVOKE(0x269E9A, 0, rasterizer_shader_submit, shader_index, a2, a3, a4, a5, a6);
+    INVOKE(0x269E9A, 0, rasterizer_shader_submit, shader_index, a2, render_layer, a4, a5, z_far);
+    return;
 }
 
 void rasterizer_flags_unknown_function_1()

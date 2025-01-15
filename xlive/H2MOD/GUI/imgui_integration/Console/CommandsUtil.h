@@ -108,7 +108,7 @@ public:
 		m_line_buf_size = _max_buffer_size_per_line;
 
 		// allocate once we know the size
-		m_buf = new char[GetBufferSize()];
+		m_buf = (char*)malloc(GetBufferSize());
 		csmemset(m_buf, 0, GetBufferSize());
 		m_buffer_idx = 0;
 		m_strings_headers.reserve(m_line_count);
@@ -122,7 +122,7 @@ public:
 	~CircularStringBuffer()
 	{
 		m_strings_headers.clear();
-		delete[] m_buf;
+		free(m_buf);
 		m_buf = NULL;
 		m_buffer_idx = 0;
 	}
@@ -147,7 +147,7 @@ public:
 		if (m_buf != NULL)
 		{
 			csmemcpy(new_buffer, m_buf, GetBufferSize());
-			delete[] m_buf;
+			free(m_buf);
 		}
 		m_buf = new_buffer;
 	}

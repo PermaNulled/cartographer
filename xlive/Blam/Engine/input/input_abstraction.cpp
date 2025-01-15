@@ -100,11 +100,11 @@ uint32 input_abstraction_get_stick_type_for_function(e_button_functions function
 }
 
 
-void input_abstraction_update_default_throttle(point2d* thumb, real_euler_angles2d* out_stick_euler_angles)
+void input_abstraction_update_default_throttle(const point2d* thumb, real_euler_angles2d* out_stick_euler_angles)
 {
-	constexpr real32 normalize_scale = 1.0f / INT16_MAX;
+	constexpr real32 normalize_scale = 1.f / INT16_MAX;
 
-	real_point2d thumbstick_points = { thumb->x, thumb->y };
+	real_point2d thumbstick_points = { (real32)thumb->x, (real32)thumb->y };
 	real_angle angle = atan2(thumbstick_points.y, thumbstick_points.x);
 
 	real32 magnitude = MAX(fabs(sin(angle)), fabs(cos(angle)));
@@ -113,9 +113,11 @@ void input_abstraction_update_default_throttle(point2d* thumb, real_euler_angles
 	out_stick_euler_angles->yaw = (real32)(thumbstick_points.x * inverse_magnitude) * normalize_scale;
 	out_stick_euler_angles->pitch = (real32)(thumbstick_points.y * inverse_magnitude) * normalize_scale;
 
-	out_stick_euler_angles->yaw = PIN(out_stick_euler_angles->yaw, -1.0f, 1.0f);
-	out_stick_euler_angles->pitch = PIN(out_stick_euler_angles->pitch, -1.0f, 1.0f);
+	out_stick_euler_angles->yaw = PIN(out_stick_euler_angles->yaw, -1.f, 1.f);
+	out_stick_euler_angles->pitch = PIN(out_stick_euler_angles->pitch, -1.f, 1.f);
+	return;
 }
+
 void input_abstraction_post_update_throttle(real_euler_angles2d* stick, real_angle angle, bool right_stick)
 {
 	real_angle flt_7B9F78[] =
@@ -259,8 +261,8 @@ void input_abstraction_set_controller_right_thumb_deadzone(e_controller_index co
 	if (profile_settings->controller_deadzone_type == _controller_deadzone_type_axial 
 		|| profile_settings->controller_deadzone_type == _controller_deadzone_type_combined) 
 	{
-		preference->gamepad_axial_deadzone_right.x = THUMBSTICK_PERCENTAGE_TO_POINT(profile_settings->deadzone_axial.x);
-		preference->gamepad_axial_deadzone_right.y = THUMBSTICK_PERCENTAGE_TO_POINT(profile_settings->deadzone_axial.y);
+		preference->gamepad_axial_deadzone_right.x = (uint16)THUMBSTICK_PERCENTAGE_TO_POINT(profile_settings->deadzone_axial.x);
+		preference->gamepad_axial_deadzone_right.y = (uint16)THUMBSTICK_PERCENTAGE_TO_POINT(profile_settings->deadzone_axial.y);
 	}
 	else
 	{
@@ -271,7 +273,7 @@ void input_abstraction_set_controller_right_thumb_deadzone(e_controller_index co
 	if (profile_settings->controller_deadzone_type == _controller_deadzone_type_radial 
 		|| profile_settings->controller_deadzone_type == _controller_deadzone_type_combined)
 	{
-		g_controller_radial_deadzones[controller] = THUMBSTICK_PERCENTAGE_TO_POINT(profile_settings->deadzone_radial);
+		g_controller_radial_deadzones[controller] = (uint16)THUMBSTICK_PERCENTAGE_TO_POINT(profile_settings->deadzone_radial);
 	}
 	else
 	{

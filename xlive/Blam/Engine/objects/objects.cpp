@@ -504,22 +504,22 @@ datum object_new_internal(datum object_index, object_placement_data* data)
 	object_datum* object = object_get_fast_unsafe(object_index);
 
 	object_header->flags.set(_object_header_post_update_bit, true);
-	object_header->type = object_def->object.object_type;
+	object_header->type = (int8)object_def->object.object_type;
 	object->tag_definition_index = data->tag_index;
 
 	if (data->object_identifier.get_source() == NONE)
 	{
 		object->object_identifier.create_dynamic((e_object_type)object_def->object.object_type);
 		object->placement_index = NONE;
-		object->structure_bsp_index = get_global_structure_bsp_index();
+		object->structure_bsp_index = (uint8)get_global_structure_bsp_index();
 	}
 	else
 	{
 		ASSERT(data->scenario_datum_index != NONE);
 		ASSERT(data->object_identifier.get_type() == object_def->object.object_type);
 		object->object_identifier = data->object_identifier;
-		object->placement_index = data->scenario_datum_index;
-		object->structure_bsp_index = data->object_identifier.get_origin_bsp();
+		object->placement_index = (int16)data->scenario_datum_index;
+		object->structure_bsp_index = (uint8)data->object_identifier.get_origin_bsp();
 	}
 
 	object->position = data->position;
@@ -646,17 +646,17 @@ datum object_new_internal(datum object_index, object_placement_data* data)
 	}
 
 
-	int16 orientation_size = (!allow_interpolation ? 0 : 32 * node_count);
+	const int16 orientation_size = (int16)(!allow_interpolation ? 0 : 32 * node_count);
 
 	// TODO: header asserts here
 
 	// Allocate object header blocks
 	bool can_create_object =
 		object_header_block_allocate(object_index, offsetof(object_datum, object_attachments_block), (uint16)8 * (uint16)object_def->object.attachments.count, 0)
-		&& object_header_block_allocate(object_index, offsetof(object_datum, damage_sections_block), 8 * damage_info_damage_sections_size, 0)
+		&& object_header_block_allocate(object_index, offsetof(object_datum, damage_sections_block), (int16)(8 * damage_info_damage_sections_size), 0)
 		&& object_header_block_allocate(object_index, offsetof(object_datum, change_color_block), (uint16)24 * (uint16)object_def->object.change_colors.count, 0)
-		&& object_header_block_allocate(object_index, offsetof(object_datum, nodes_block), sizeof(real_matrix4x3) * node_count, 0)
-		&& object_header_block_allocate(object_index, offsetof(object_datum, collision_regions_block), 10 * collision_regions_count, 0)
+		&& object_header_block_allocate(object_index, offsetof(object_datum, nodes_block), (int16)(sizeof(real_matrix4x3) * node_count), 0)
+		&& object_header_block_allocate(object_index, offsetof(object_datum, collision_regions_block), (int16)(10 * collision_regions_count), 0)
 		&& object_header_block_allocate(object_index, offsetof(object_datum, original_orientation_block), orientation_size, 4)
 		&& object_header_block_allocate(object_index, offsetof(object_datum, node_orientation_block), orientation_size, 4)
 		&& object_header_block_allocate(object_index, offsetof(object_datum, animation_manager_block), (valid_animation_manager ? 144 : 0), 0)
@@ -1076,7 +1076,7 @@ int16 __cdecl internal_object_get_markers_by_string_id(datum object_index, strin
 
 			if (marker_index)
 			{
-				return marker_index;
+				return (int16)marker_index;
 			}
 		}
 	}
@@ -1096,7 +1096,7 @@ int16 __cdecl internal_object_get_markers_by_string_id(datum object_index, strin
 		scale_vector3d(&marker_object->matrix.vectors.left, -1.0f, &marker_object->matrix.vectors.left);
 	}
 
-	return (marker != 0 ? marker_index : 1);
+	return (marker != 0 ? (int16)marker_index : 1);
 }
 
 int16 __cdecl object_get_markers_by_string_id(datum object_index, string_id marker, object_marker* marker_object, int16 count)

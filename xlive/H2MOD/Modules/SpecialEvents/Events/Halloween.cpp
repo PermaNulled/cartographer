@@ -41,7 +41,7 @@ void halloween_game_life_cycle_update(e_game_life_cycle state)
 				{
 				case 0:
 					object_placement_data_new(&placement, pump_datum, -1, 0);
-					placement.variant_name = pump_hmlt->variants[scen_place.variant_id]->name.get_packed();
+					placement.variant_name = pump_hmlt->variants[scen_place.variant_id]->name;
 					break;
 				case 1:
 					object_placement_data_new(&placement, candle_datum, -1, 0);
@@ -70,7 +70,7 @@ void halloween_game_life_cycle_update(e_game_life_cycle state)
 				{
 				case 0:
 					object_placement_data_new(&placement, pump_datum, -1, 0);
-					placement.variant_name = pump_hmlt->variants[scen_place.variant_id]->name.get_packed();
+					placement.variant_name = pump_hmlt->variants[scen_place.variant_id]->name;
 					break;
 				case 1:
 					object_placement_data_new(&placement, candle_datum, -1, 0);

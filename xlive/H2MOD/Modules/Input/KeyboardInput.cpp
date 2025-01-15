@@ -120,14 +120,14 @@ void hotkeyFuncAlignWindow() {
 	int interval_height = monitor_height / 2;
 	D3DVIEWPORT9 pViewport;
 	device->GetViewport(&pViewport);
-	int width = interval_width * round(pViewport.Width / (double)interval_width);
-	int height = interval_height * round(pViewport.Height / (double)interval_height);
+	int width = (int)(interval_width * round(pViewport.Width / (double)interval_width));
+	int height = (int)(interval_height * round(pViewport.Height / (double)interval_height));
 	RECT gameWindowRect;
 	GetWindowRect(H2hWnd, &gameWindowRect);
 	int monitorXOffset = gameWindowRect.left - info.rcMonitor.left;
 	int monitorYOffset = gameWindowRect.top - info.rcMonitor.top;
-	int padX = interval_width * round(monitorXOffset / (double)interval_width);
-	int padY = interval_height * round(monitorYOffset / (double)interval_height);
+	int padX = (int)(interval_width * round(monitorXOffset / (double)interval_width));
+	int padY = (int)(interval_height * round(monitorYOffset / (double)interval_height));
 	int posX = info.rcMonitor.left + padX;
 	int posY = info.rcMonitor.top + padY;
 

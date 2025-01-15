@@ -179,14 +179,14 @@ void shell_windows_throttle_framerate(int desired_framerate)
 		return;
 	}
 
-	auto min_frametime_usec = (long long)(1000000.0 / (double)desired_framerate);
-	auto dt_usec = shell_time_diff(last_counter, k_shell_time_usec_denominator);
+	unsigned long long min_frametime_usec = (long long)(1000000.0 / (double)desired_framerate);
+	unsigned long long dt_usec = shell_time_diff(last_counter, k_shell_time_usec_denominator);
 
 	const int min_time_to_suspend_exec_usec = 3000;
 
 	if (dt_usec < min_frametime_usec)
 	{
-		auto sleep_time_usec = min_frametime_usec - dt_usec;
+		unsigned long long sleep_time_usec = min_frametime_usec - dt_usec;
 
 		// sleep threadWaitTimePercentage out of the target render time using thread sleep or timer wait
 		long long system_yield_time_usec = (threadWaitTimePercentage * sleep_time_usec) / 100;

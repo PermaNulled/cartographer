@@ -12,7 +12,7 @@ void __cdecl particle_update_points_interpolate_hook(const real_point3d* previou
 	// this can be fired before the initial position of the emitter is set in some situations
 	// there for instead of rendering the particle at the root origin do it at the target (initial) position instead
 	// this is only really noticeable on 30 tick gameplay
-	if (memcmp(previous_point, &global_zero_vector3d, sizeof(real_point3d)) == 0)
+	if (memcmp(previous_point, global_zero_vector3d, sizeof(real_point3d)) == 0)
 		csmemcpy(out, target_point, sizeof(real_point3d));
 	else
 		csmemcpy(out, previous_point, sizeof(real_point3d));

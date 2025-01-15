@@ -124,7 +124,7 @@ void simulation_queue_player_event_apply(const s_simulation_queue_element* eleme
 	c_bitstream stream(element->data, element->data_size);
 	stream.begin_reading();
 
-	uint16 abs_player_index = stream.read_integer("player-index", k_player_index_bit_count);
+	const uint16 abs_player_index = (uint16)stream.read_integer("player-index", k_player_index_bit_count);
 	bool active = stream.read_bool("active");
 
 	if (!stream.error_occured())

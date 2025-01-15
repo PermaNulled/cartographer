@@ -64,7 +64,7 @@ namespace EngineHooks
 	bool __stdcall xlocator_parse_search_result(void* thisx, int a2, s_session_live_result* session_out)
 	{
 		bool result = p_xlocator_parse_search_result(thisx, a2, session_out);
-		return result && verify_game_version_on_join_hook(session_out->executable_type, session_out->executable_version, session_out->compatible_version);
+		return result && verify_game_version_on_join_hook((uint8)session_out->executable_type, (uint16)session_out->executable_version, (uint16)session_out->compatible_version);
 	}
 #pragma endregion
 

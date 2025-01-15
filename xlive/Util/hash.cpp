@@ -25,7 +25,7 @@ bool hash_do_file_hashing(HANDLE file, HCRYPTHASH hash, DWORD flags, long long l
 		len = LONG_MAX;
 	}
 	BYTE file_chunk[file_chunk_size];
-	DWORD len_to_read = min(file_chunk_size, len);
+	DWORD len_to_read = (DWORD)min(file_chunk_size, len);
 	DWORD bytes_read = 0;
 	while (LOG_CHECK(ReadFile(file, file_chunk, len_to_read,
 		&bytes_read, NULL)))
@@ -42,7 +42,7 @@ bool hash_do_file_hashing(HANDLE file, HCRYPTHASH hash, DWORD flags, long long l
 		len = len - bytes_read;
 		if (len <= 0)
 			return true;
-		len_to_read = min(file_chunk_size, len);
+		len_to_read = (DWORD)min(file_chunk_size, len);
 	}
 	return true;
 }

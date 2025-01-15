@@ -75,7 +75,7 @@ real32 __cdecl main_time_update_hook(bool fixed_time_step, real32 fixed_time_del
 	else
 	{
 		time_now_msec = main_time_get_absolute_milliseconds();
-		dt_sec = (double)(time_now_msec - main_time_globals->last_milliseconds) / 1000.;
+		dt_sec = (real32)((real64)(time_now_msec - main_time_globals->last_milliseconds) / 1000.);
 
 		// don't run the frame limiter when time step is fixed, because the code doesn't support it
 		// in case of fixed time step, frame limiter should be handled by the other frame limiter
@@ -90,7 +90,7 @@ real32 __cdecl main_time_update_hook(bool fixed_time_step, real32 fixed_time_del
 				while (frame_time > dt_sec)
 				{
 					uint32 yield_time_msec = 0;
-					real32 fMsSleep = (real32)(frame_time - dt_sec) * 1000.;
+					real32 fMsSleep = (real32)(frame_time - dt_sec) * 1000.f;
 
 					if (fMsSleep >= 1.0f)
 					{
@@ -103,7 +103,7 @@ real32 __cdecl main_time_update_hook(bool fixed_time_step, real32 fixed_time_del
 
 
 					time_now_msec = main_time_get_absolute_milliseconds();
-					dt_sec = (double)(time_now_msec - main_time_globals->last_milliseconds) / 1000.;
+					dt_sec = (real32)((real64)(time_now_msec - main_time_globals->last_milliseconds) / 1000.);
 				}
 			}
 			else
@@ -111,7 +111,7 @@ real32 __cdecl main_time_update_hook(bool fixed_time_step, real32 fixed_time_del
 				Sleep(15u);
 
 				time_now_msec = main_time_get_absolute_milliseconds();
-				dt_sec = (double)(time_now_msec - main_time_globals->last_milliseconds) / 1000.;
+				dt_sec = (real32)((real64)(time_now_msec - main_time_globals->last_milliseconds) / 1000.);
 			}
 		}
 	}

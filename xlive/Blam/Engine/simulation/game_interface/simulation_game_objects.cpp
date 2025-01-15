@@ -67,7 +67,7 @@ bool __stdcall c_simulation_object_entity_definition__object_creation_decode(voi
 {
     if (packet->read_bool("model-variant-index-exists"))
     {
-        creation_data->model_variant_index = packet->read_integer("model-variant-index", 6);    // 6 bits since k_maximum_variants_per_model is 64
+        creation_data->model_variant_index = (int8)packet->read_integer("model-variant-index", 6);    // 6 bits since k_maximum_variants_per_model is 64
     }
     else
     {

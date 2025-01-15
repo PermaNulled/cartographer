@@ -180,11 +180,11 @@ uint32 c_simulation_entity_database::read_creation_from_packet(int32 entity_inde
 
                         // copy the block, allow the process function to use this
                         blocks[*block_count + _entity_creation_block_order_simulation_entity_creation].block_type = _network_memory_block_simulation_entity_creation;
-                        blocks[*block_count + _entity_creation_block_order_simulation_entity_creation].block_size = creation_data_size;
+                        blocks[*block_count + _entity_creation_block_order_simulation_entity_creation].block_size = (int16)creation_data_size;
                         blocks[*block_count + _entity_creation_block_order_simulation_entity_creation].block_data = creation_data;
 
                         blocks[*block_count + _entity_creation_block_order_simulation_entity_state].block_type = _network_memory_block_simulation_entity_state;
-                        blocks[*block_count + _entity_creation_block_order_simulation_entity_state].block_size = state_data_size;
+                        blocks[*block_count + _entity_creation_block_order_simulation_entity_state].block_size = (int16)state_data_size;
                         blocks[*block_count + _entity_creation_block_order_simulation_entity_state].block_data = state_data;
 
                         blocks[*block_count + _entity_creation_block_order_forward_memory_queue_element].block_type = _network_memory_block_forward_simulation_queue_element;
@@ -327,7 +327,7 @@ int32 c_simulation_entity_database::read_update_from_packet(
                 *out_update_mask = update_mask;
 
                 blocks[*block_count + _entity_update_block_order_simulation_entity_state].block_type = _network_memory_block_simulation_entity_state;
-                blocks[*block_count + _entity_update_block_order_simulation_entity_state].block_size = game_entity->state_data_size;
+                blocks[*block_count + _entity_update_block_order_simulation_entity_state].block_size = (int16)game_entity->state_data_size;
                 blocks[*block_count + _entity_update_block_order_simulation_entity_state].block_data = state_data;
 
                 blocks[*block_count + _entity_update_block_order_forward_memory_queue_element].block_type = _network_memory_block_forward_simulation_queue_element;

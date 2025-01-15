@@ -5,8 +5,6 @@
 #include "game/game_time.h"
 #include "math/math.h"
 
-FLOATING_POINT_ENV_ACCESS();
-
 extern bool g_xbox_tickrate_enabled;
 
 bool melee_lunge_hook_enabled = true;
@@ -137,8 +135,8 @@ void c_character_physics_mode_melee_datum::melee_deceleration_fixup
 		real32 real_time_to_target = ((remaining_distance_from_player_position / max_speed_per_tick_2) - 0.5f);
 
 		// field_28 is always the same after the first melee tick
-		real32 unk1 = m_field_28 * 1.5;
-		double unk2 = MAX(MIN(unk1, 3.5), 0.75);
+		real32 unk1 = m_field_28 * 1.5f;
+		real32 unk2 = MAX(MIN(unk1, 3.5f), 0.75f);
 
 		real32 maybe_minimum_velocity = game_tick_length() * unk2;
 
@@ -227,7 +225,7 @@ void c_character_physics_mode_melee_datum::melee_deceleration_fixup
 
 				real32 deceleration = m_velocity_to_decelerate / k_deceleration_ticks_real;
 
-				m_time_to_target_in_ticks = (current_velocity_per_tick / deceleration) - 0.5f;
+				m_time_to_target_in_ticks = (int)((current_velocity_per_tick / deceleration) - 0.5f);
 				
 				if (deceleration > current_velocity_per_tick)
 				{
@@ -456,7 +454,7 @@ void __thiscall c_character_physics_mode_melee_datum::update_internal
 
 					// not entirely sure if this is actually min_velocity_after_deceleration_per_tick
 					// but it looks like it
-					double temp = MAX(MIN(unk3, 3.5), 0.75);
+					real32 temp = MAX(MIN(unk3, 3.5f), 0.75f);
 
 					real32 min_velocity_after_deceleration_per_tick = game_tick_length() * temp;
 

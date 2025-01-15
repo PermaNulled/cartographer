@@ -12,7 +12,6 @@
 #include "main/main_screenshot.h"
 #include "networking/logic/life_cycle_manager.h"
 #include "networking/NetworkMessageTypeCollection.h"
-#include "render/render_cartographer_ingame_ui.h"
 #include "objects/objects.h"
 #include "simulation/game_interface/simulation_game_action.h"
 #include "text/unicode.h"

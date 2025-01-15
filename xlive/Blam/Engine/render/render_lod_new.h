@@ -42,7 +42,7 @@ struct s_render_object_info
     uint8 gap_16D[3];
     uint32 field_170;
     int32 field_174;
-    int32 field_178;
+    datum shader_tag_index;
     int32 field_17C;
     int32 field_180;
     int32 field_184;

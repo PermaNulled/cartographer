@@ -65,34 +65,6 @@ namespace TagFixes
 				1
 			);
 		}
-		void fix_dynamic_lights()
-		{
-			// TODO FIXME: this breaks other shadows
-			return;
-
-			datum cinematic_shadow_datum = tag_loaded(_tag_group_vertex_shader, "rasterizer\\vertex_shaders_dx9\\shadow_buffer_generation_cinematic");
-			datum shadow_datum = tag_loaded(_tag_group_shader_pass, "shaders\\shader_passes\\shadow\\shadow_generate");
-			char* shadow_tag = (char*)tag_get_fast(shadow_datum);
-			if(shadow_tag != nullptr)
-			{
-				tag_block<int> *shadow_pp = reinterpret_cast<tag_block<int>*>(shadow_tag + 0x1C);
-				if(shadow_pp->count > 0 && shadow_pp->data != NONE)
-				{
-					auto shadow_pp_data = cache_get_tag_data(shadow_pp->data);
-					tag_block<int>*shadow_impl_block = reinterpret_cast<tag_block<int>*>(shadow_pp_data);
-					if(shadow_pp->count > 0 && shadow_impl_block->data != NONE)
-					{
-						auto shadow_impl = cache_get_tag_data(shadow_impl_block->data);
-						tag_reference* impl_1 = reinterpret_cast<tag_reference*>(shadow_impl + (0x14A) + 0xFC);
-						tag_reference* impl_2 = reinterpret_cast<tag_reference*>(shadow_impl + (0x14A*2) + 0xFC);
-
-						impl_1->index = cinematic_shadow_datum;
-						//TODO: Re-enable this once the vertex shaders for shadows are fixed.
-						//impl_2->TagIndex = cinematic_shadow_datum.data;
-					}
-				}
-			}
-		}
 
 		void font_table_fix()
 		{
@@ -149,7 +121,6 @@ namespace TagFixes
 		if (!Memory::IsDedicatedServer()) 
 		{
 			fix_shaders_nvidia();
-			fix_dynamic_lights();
 			font_table_fix();
 			if (H2Config_shader_lod_max)
 			{

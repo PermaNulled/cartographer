@@ -53,19 +53,21 @@ void __cdecl user_interface_get_cursor_position_scaled(point2d* out_position)
 
 		window_bound* bounds = get_user_window_bounds(0);
 
-		temp_position.x -= bounds->rasterizer_camera.viewport_bounds.right / 2.0f;
-		temp_position.y = (bounds->rasterizer_camera.viewport_bounds.bottom / 2.0f) - temp_position.y;
+		temp_position.x = (int16)(temp_position.x - bounds->rasterizer_camera.viewport_bounds.right / 2.f);
+		temp_position.y = (int16)((bounds->rasterizer_camera.viewport_bounds.bottom / 2.f) - temp_position.y);
 
-		temp_position.x /= *get_ui_scale();
-		temp_position.y /= *get_ui_scale();
+		temp_position.x = (int16)(temp_position.x / *get_ui_scale());
+		temp_position.y = (int16)(temp_position.y / *get_ui_scale());
 
 		// Convert to integer coordinates
 		out_position->x = temp_position.x;
 		out_position->y = temp_position.y;
 	}
+	return;
 }
 
 void user_interface_utilities_apply_patches()
 {
 	DETOUR_ATTACH(p_user_interface_get_cursor_position, Memory::GetAddress<user_interface_get_cursor_position_scale_t>(0x21D620), user_interface_get_cursor_position_scaled);
+	return;
 }

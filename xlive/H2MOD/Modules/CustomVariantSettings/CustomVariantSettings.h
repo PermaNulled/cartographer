@@ -20,17 +20,17 @@ namespace CustomVariantSettings
 	};
 	struct s_variant_settings
 	{
-		double gravity = 1.0f;
+		real32 gravity = 1.0f;
 		bool infiniteAmmo = false;
 		bool explosionPhysics = false;
 		e_hill_rotation hillRotation = _random;
-		double gameSpeed = 1.0f;
+		real32 gameSpeed = 1.0f;
 		bool infiniteGrenades = false;
 		bool spawnProtection = 1;
-		byte predefinedHillSet[16];
+		byte predefinedHillSet[16] = {};
 		uint8 forced_fov = 0;
 
-		double ComputedGravity() const
+		real32 ComputedGravity() const
 		{
 			return gravity * s_physics_constants::get_default_gravity();
 		}

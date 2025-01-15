@@ -193,6 +193,8 @@ DWORD WINAPI XUserSetContext(DWORD dwUserIndex, DWORD dwContextId, DWORD dwConte
 		LOG_TRACE_XLIVE("- X_CONTEXT_GAME_MODE = {:x}", dwContextValue);
 		sessionDetails.dwGameMode = dwContextValue;
 		break;
+	default:
+		break;
 	}
 
 	return ERROR_SUCCESS;

@@ -127,8 +127,10 @@ Memory::GetAddress<_type>(_addr_client, _addr_server)(__VA_ARGS__)
 /// Add an anonymous 128-bit (16 byte) field to a structure.
 #define PAD128 unsigned __int64 : 64; unsigned __int64 : 64;
 
-/// Use this for setting up enum bitfields
-#define FLAG(bit)( 1<<(bit) )
+// Use this for setting up enum bitfields
+// TODO: (uint64) cast is done as a hack to avoid warnings when doing the left shift on the final bit of a type
+// Find a better way of dealing with this
+#define FLAG(bit)( (uint64)1 << (uint64)(bit) )
 #define TEST_BIT(flags, bit)( ((flags) & FLAG(bit)) != 0 )
 #define TEST_FLAG(flag, flags)( ((flag) & (flags)) != 0 )
 #define SET_FLAG(flags, bit, value)( (value) ? ((flags) |= FLAG(bit)) : ((flags) &= ~FLAG(bit)) )
@@ -179,7 +181,7 @@ ASSERT_EXCEPTION(STATEMENT, true);	\
 (void)0
 
 #else
-#define ASSERT_EXCEPTION()									(void)(0)
+#define ASSERT_TRIGGER_EXCEPTION()							(void)(0)
 #define DISPLAY_ASSERT_EXCEPTION(STATEMENT, IS_EXCEPTION)   (void)(#STATEMENT)
 #define DISPLAY_ASSERT(STATEMENT)                           (void)(#STATEMENT)
 #define ASSERT_EXCEPTION(STATEMENT, IS_EXCEPTION)           (void)(#STATEMENT)

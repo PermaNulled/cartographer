@@ -73,8 +73,8 @@ void rasterizer_dx9_fullscreen_calculate_texcoords(const real_rectangle2d* bound
 
     // texcoords normalized device coordinates (origin in 0,0 bottom left, max 1,1 top right)
     // set the tex coords based on the texture set to be drawn on the screen
-    const uint32 bounds_width = bounds->x1 - bounds->x0;
-    const uint32 bounds_height = bounds->y1 - bounds->y0;
+	const uint32 bounds_width = (uint32)(bounds->x1 - bounds->x0);
+	const uint32 bounds_height = (uint32)(bounds->y1 - bounds->y0);
 
     uint32 tex_width;
     uint32 tex_height;

@@ -30,8 +30,6 @@ void* __cdecl DediCommandHook(wchar_t** command_line_split_wide, int split_count
 
 		for (int i = 0; i < split_count; i++)
 		{
-			std::wstring tokenWide;
-
 			if (i > 0)
 			{
 				token_wide.set(command_line_split_wide[i]);

@@ -115,7 +115,7 @@ void render_splitscreen_line(void)
 	const int16 resolution_y = (int16)rasterizer_globals->resolution_y;
 
 	// We calculate the size of the line by dividing our resolution by the height the original game ran at
-	const int32 line_size = resolution_y / 480;		
+	const int16 line_size = resolution_y / 480;		
 	
 	rectangle2d line;
 	pixel32 color = k_splitscreen_line_colour;

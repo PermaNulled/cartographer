@@ -2,7 +2,7 @@
 
 #define k_maximum_hs_unit_seat_mappings 65536
 
-enum e_seat_mapping_bitfield : int
+enum e_seat_mapping_bitfield : uint32
 {
 	seat_mapping_bitfield_seat_0 = FLAG(0),
 	seat_mapping_bitfield_seat_1 = FLAG(1),

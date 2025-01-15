@@ -125,7 +125,7 @@ const wchar_t *const *const k_screen_label_table_eng[k_cartographer_account_mana
 	k_screen_type_list_add_account_eng
 };
 
-const wchar_t const* const* const* k_screen_label_table[k_language_count] =
+const wchar_t *const *const *const k_screen_label_table[k_language_count] =
 {
 	k_screen_label_table_eng,
 	k_screen_label_table_eng,

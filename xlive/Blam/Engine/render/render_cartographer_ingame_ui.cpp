@@ -282,10 +282,10 @@ void render_netdebug_text(void)
 				{
 					observer_channel = &session->m_network_observer->m_observer_channels[observer_channel_index];
 
-					netdebug_data->client_rtt_msec = observer_channel->net_rtt;
-					netdebug_data->client_packet_rate = observer_channel->stream_packet_rate * 10.f;
-					netdebug_data->client_throughput = (observer_channel->throughput_bps * 10.f) / 1024.f;
-					netdebug_data->client_packet_loss_percentage = observer_channel->field_440.average_values_in_window() * 100.f;
+					netdebug_data->client_rtt_msec = (int16)observer_channel->net_rtt;
+					netdebug_data->client_packet_rate = (int16)(observer_channel->stream_packet_rate * 10.f);
+					netdebug_data->client_throughput = (int16)((observer_channel->throughput_bps * 10.f) / 1024.f);
+					netdebug_data->client_packet_loss_percentage = (int16)(observer_channel->field_440.average_values_in_window() * 100.f);
 
 					// NOT UPDATED IN REAL-TIME
 					//for (int32 i = 0; i < k_number_of_users; i++)
@@ -306,8 +306,8 @@ void render_netdebug_text(void)
 			wchar_t netdebug_text[512];
 			
 			rasterizer_get_frame_bounds(&bounds);
-			bounds.top = (8 * rasterizer_globals->ui_scale);
-			bounds.left = bounds.right - (1070 * rasterizer_globals->ui_scale);
+			bounds.top = (int16)(8 * rasterizer_globals->ui_scale);
+			bounds.left = bounds.right - (int16)(1070 * rasterizer_globals->ui_scale);
 			bounds.bottom = bounds.top + line_height;
 
 			real_argb_color text_color_console = *global_real_argb_white;

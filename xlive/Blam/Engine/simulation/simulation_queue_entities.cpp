@@ -547,7 +547,7 @@ void simulation_queue_entity_deletion_apply(const s_simulation_queue_element* el
 	c_bitstream stream(element->data, element->data_size);
 	stream.begin_reading();
 
-	int32 entity_index;
+	// int32 entity_index;
 	datum gamestate_index;
 	e_simulation_entity_type entity_type;
 	if (simulation_queue_entity_decode_header(&stream, &entity_type, &gamestate_index))

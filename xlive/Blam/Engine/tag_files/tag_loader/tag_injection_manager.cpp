@@ -14,14 +14,12 @@
 #include "units/biped_definitions.h"
 #include "units/vehicle_definitions.h"
 
-#include "Util/filesys.h"
-
 extern bool g_force_cartographer_update;
 
 /* constants */
 
-#define k_relative_maps_directory L"\\maps\\"
-#define k_relative_mods_directory L"\\mods\\"
+#define k_relative_maps_directory L".\\maps\\"
+#define k_relative_mods_directory L".\\mods\\"
 #define k_relative_mods_maps_directory k_relative_mods_directory L"maps\\"
 #define k_relative_mods_plugin_directory k_relative_mods_directory L"plugins\\"
 
@@ -37,14 +35,9 @@ c_tag_injecting_manager::c_tag_injecting_manager():
 
 void c_tag_injecting_manager::init_directories()
 {
-	this->m_base_map_directory.set(GetExeDirectoryWide().c_str());
-	this->m_base_map_directory.append(k_relative_maps_directory);
-
-	this->m_mods_map_directory.set(GetExeDirectoryWide().c_str());
-	this->m_mods_map_directory.append(k_relative_mods_maps_directory);
-
-	this->m_plugins_directory.set(GetExeDirectoryWide().c_str());
-	this->m_plugins_directory.append(k_relative_mods_plugin_directory);
+	this->m_base_map_directory.set(k_relative_maps_directory);
+	this->m_mods_map_directory.set(k_relative_mods_maps_directory);
+	this->m_plugins_directory.set(k_relative_mods_plugin_directory);
 }
 
 void c_tag_injecting_manager::set_base_map_tag_data_size(const uint32 size)
@@ -103,7 +96,7 @@ bool c_tag_injecting_manager::find_map(const wchar_t* map_name, c_static_wchar_s
 		// Exit and create a popup if a map is missing
 		else
 		{
-			const wchar_t* format = L"[c_tag_injecting_manager::find_map] could not locate %s.map in any valid content location";
+			const wchar_t format[] = L"[c_tag_injecting_manager::find_map] could not locate %s.map in any valid content location";
 			wchar_t output_wide[NUMBEROF(format) + MAX_PATH];
 			
 			usnzprintf(output_wide, NUMBEROF(output_wide), format, map_name);
@@ -510,7 +503,7 @@ bool c_tag_injecting_manager::initialize_agent(tag_group group)
 	// Exit and create a popup if a plugin is missing
 	if (!PathFileExists(plugin_path.get_string()))
 	{
-		const wchar_t* format = L"[c_tag_injecting_manager::initialize_agent] Plugin file could not be located %s";
+		const wchar_t format[] = L"[c_tag_injecting_manager::initialize_agent] Plugin file could not be located %s";
 		wchar_t output_wide[NUMBEROF(format) + MAX_PATH];
 
 		usnzprintf(output_wide, NUMBEROF(output_wide), format, plugin_path.get_string());

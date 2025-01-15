@@ -385,11 +385,11 @@ bool ComputeFileCrc32Hash(wchar_t* filepath, DWORD &rtncrc32) {
 		}
 	}
 
+	CloseHandle(hFile);
+
 	if (!bResult) {
 		return false;
 	}
-
-	CloseHandle(hFile);
 
 	rtncrc32 = ~oldcrc32;
 

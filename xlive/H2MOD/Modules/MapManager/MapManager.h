@@ -12,7 +12,7 @@ public:
 	void SetMapNameToDownload(const std::wstring& mapNameToDownload);
 	void SetMapNameToDownload(const wchar_t* mapNameToDownload);
 
-	int GetDownloadPercentage();
+	int GetDownloadPercentage(void) const;
 	void SetDownloadPercentage(int _downloadPercentage);
 
 	void StartMapDownload();

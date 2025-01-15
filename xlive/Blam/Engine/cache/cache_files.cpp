@@ -170,7 +170,7 @@ bool scenario_tags_load_process_shared_tags()
 	const uint32 aligned_data_offset = cache_file_align_read_size_to_cache_page(shared_header.data_offset);
 	const uint32 aligned_data_size = cache_file_align_read_size_to_cache_page(shared_header.data_size);
 
-	if (aligned_tag_size > cache_header->tag_offset_mask)
+	if (aligned_tag_size > (uint32)cache_header->tag_offset_mask)
 		return false;
 
 	// Read tags header

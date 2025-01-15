@@ -410,7 +410,7 @@ void c_screen_settings::apply_patches_on_map_load()
 	csmemcpy(main_widget_tag->panes[_settings_pane_guide], main_widget_tag->panes[_settings_pane_about], sizeof(s_window_pane_reference));
 	
 	// updating the new number of visible items in each pane
-	for (size_t i = 0; i < main_widget_tag->panes.count; ++i)
+	for (int32 i = 0; i < main_widget_tag->panes.count; ++i)
 	{
 		main_widget_tag->panes[i]->list_block[0]->num_visible_items = k_no_of_visible_items_for_settings;
 	}

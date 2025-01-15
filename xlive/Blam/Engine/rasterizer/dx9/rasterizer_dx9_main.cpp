@@ -436,7 +436,7 @@ bool __cdecl rasterizer_dx9_create_texture(uint32 width, uint32 height, int32 le
     return INVOKE(0x260820, 0x0, rasterizer_dx9_create_texture, width, height, levels, usage, format, linear, texture);
 }
 
-void rasterizer_dx9_texture_stage_dimensions(uint8 stage, uint32 width, uint32 height)
+void rasterizer_dx9_texture_stage_dimensions(int16 stage, uint32 width, uint32 height)
 {
     s_rasterizer_globals* rasterizer_globals = rasterizer_globals_get();
     rasterizer_globals->bitmaps.textures_staged_width[stage] = width;

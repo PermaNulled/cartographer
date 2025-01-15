@@ -93,13 +93,16 @@ DWORD WINAPI XStorageUploadFromMemory(DWORD dwUserIndex, const WCHAR* wszServerP
 		return ERROR_FUNCTION_FAILED;
 	}
 
-	fseek(fp, 0l, SEEK_SET);
-	fwrite(pbBuffer, dwBufferSize, 1, fp);
-	fseek(fp, 0l, SEEK_END);
+	if (fp)
+	{
+		fseek(fp, 0l, SEEK_SET);
+		fwrite(pbBuffer, dwBufferSize, 1, fp);
+		fseek(fp, 0l, SEEK_END);
 
-	LOG_TRACE_XLIVE(L" - Uploaded total byte count: {}", ftell(fp));
+		LOG_TRACE_XLIVE(L" - Uploaded total byte count: {}", ftell(fp));
 
-	fclose(fp);
+		fclose(fp);
+	}
 
 	if (pOverlapped)
 	{

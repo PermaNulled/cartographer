@@ -420,7 +420,7 @@ void __cdecl first_person_weapons_update_nodes(int32 user_index, int32 weapon_sl
                             rounds_total = magazine->rounds_loaded_maximum;
                         }
 
-                        ammunition_frame_position = ((rounds_total - rounds_loaded_maximum) * v1) + rounds_loaded_maximum;
+                        ammunition_frame_position = (int16)(((rounds_total - rounds_loaded_maximum) * v1) + rounds_loaded_maximum);
                     }
                     weapon_channel.set_frame_position((real32)ammunition_frame_position);
                     weapon_channel.apply_node_orientations(0.0f, 0.0f, weapon_data->node_orientations_count, fp_orientations->weapon_orientations, 0, 0);
@@ -448,7 +448,11 @@ void __cdecl first_person_weapons_update_nodes(int32 user_index, int32 weapon_sl
             if (TEST_BIT(fp_data->flags, 1) && weapon_data->animation_manager.interpolator_controls[1].enabled())
             {
                 ASSERT(weapon_data->node_orientations_count == weapon_data->animation_manager.get_node_count());
-                weapon_data->animation_manager.interpolate_node_orientations(weapon_data->node_orientations_count, NULL, fp_orientations->hand_orientations, fp_orientations->weapon_orientations);
+                weapon_data->animation_manager.interpolate_node_orientations(
+                    (int16)weapon_data->node_orientations_count,
+                    NULL,
+                    fp_orientations->hand_orientations,
+                    fp_orientations->weapon_orientations);
             }
             SET_FLAG(fp_data->flags, 1, true);
             
@@ -778,7 +782,7 @@ void first_person_weapon_apply_ik(int32 user_index, s_first_person_model_data* f
                     while (fp_data->weapons[0].animation_manager.find_next_weapon_ik_point(&iterator))
                     {
                         if (iterator.attach_to_marker != NONE 
-                            && iterator.attach_to_marker.get_packed() 
+                            && iterator.attach_to_marker 
                             && IN_RANGE(fp_data->character_type, _character_type_masterchief, globals->player_representation.count - 1) )
                         {
                             const s_game_globals_player_representation* player_rep = globals->player_representation[fp_data->character_type];

@@ -355,7 +355,7 @@ size_t map_download_curl_write_data_cb(void* ptr, size_t size, size_t nmemb, FIL
 
 static int32 map_download_curl_xferinfo_cb(void* p, curl_off_t dltotal, curl_off_t dlnow, curl_off_t ultotal, curl_off_t ulnow) {
 	MapDownloadQuery* mapDownloadQuery = (MapDownloadQuery*)p;
-	mapDownloadQuery->SetDownloadPercentage(((float)dlnow / (float)dltotal) * 100.f);
+	mapDownloadQuery->SetDownloadPercentage((int)(((float)dlnow / (float)dltotal) * 100.f));
 	return mapDownloadQuery->ShouldStopDownload();
 }
 
@@ -486,7 +486,7 @@ void MapDownloadQuery::SetMapNameToDownload(const wchar_t* _mapNameToDownload)
 	SetMapNameToDownload(std::wstring(_mapNameToDownload));
 }
 
-int MapDownloadQuery::GetDownloadPercentage()
+int MapDownloadQuery::GetDownloadPercentage(void) const
 {
 	return m_downloadPercentage;
 }

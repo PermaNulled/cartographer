@@ -150,8 +150,10 @@ void c_xml_definition_loader::initialize_arrays_internal(c_xml_definition_loader
 		for (uint32 i = 0; i < definition->get_string_id_count(); i++)
 		{
 			file_seek_and_read(loader->m_file_handle, base_offset + definition->get_string_id_offset(i), sizeof(string_id), 1, &t_string_id);
-			if (t_string_id.is_valid())
+			if (t_string_id != 0)
+			{
 				loader->m_string_id_offset_count++;
+			}
 		}
 
 		for (uint32 i = 0; i < definition->get_tag_block_count(); i++)
@@ -307,7 +309,7 @@ void c_xml_definition_loader::load_tag_data_internal(c_xml_definition_loader* lo
 			uint32 calc_offset = definition->get_string_id_offset(i) + definition->get_size() * block_index;
 
 			file_seek_and_read(loader->m_file_handle, file_offset + calc_offset, sizeof(string_id), 1, &t_string_id);
-			if (t_string_id.is_valid())
+			if (t_string_id != 0)
 			{
 				loader->m_string_id_offsets[loader->m_string_id_offset_count].cache_offset = file_offset + calc_offset;
 				loader->m_string_id_offsets[loader->m_string_id_offset_count].memory_offset = (uint32)buffer + calc_offset;

@@ -27,7 +27,7 @@ struct s_movie_globals
 	bool in_progress;
 	int8 pad[3];
 	int32 recording_start_tick;
-	int32 recording_stop_tick;
+	uint32 recording_stop_tick;
 	int32 recording_frame_index;
 	int32 field_10;
 	int32 field_14;

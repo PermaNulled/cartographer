@@ -383,10 +383,10 @@ bool __cdecl screenshot_render(window_bound* window)
 											ASSERT(rotated_x >= 0 && rotated_x < screen_width);
 											ASSERT(rotated_y >= 0 && rotated_y < screen_height);
 
-											const int16 final_x = is_horizontal_tile ? horizontal_tile_x : rotated_x;
-											const int16 final_y = is_vertical_tile ? vertical_tile_y : rotated_y;
+											const int32 final_x = is_horizontal_tile ? horizontal_tile_x : rotated_x;
+											const int32 final_y = is_vertical_tile ? vertical_tile_y : rotated_y;
 											uint32* address_0 = bitmap_2d_address(bitmap_0, x, y, 0);
-											uint32* address_1 = bitmap_2d_address(bitmap_1, final_x, final_y, 0);
+											uint32* address_1 = bitmap_2d_address(bitmap_1, (int16)final_x, (int16)final_y, 0);
 											*address_1 = *address_0;	// Copy data from bitmap 0 to 1
 
 											rotated_x += cube_y[0];
@@ -423,8 +423,8 @@ bool __cdecl screenshot_render(window_bound* window)
 									uint32* address_0 = bitmap_2d_address(bitmap_0, x, y, 0);
 									uint32* address_1 = bitmap_2d_address(
 										bitmap_1,
-										horizontal_tile_num + (screenshot_globals->resolution_multiplier * x),
-										vertical_tile_num + (screenshot_globals->resolution_multiplier * y),
+										(int16)(horizontal_tile_num + (screenshot_globals->resolution_multiplier * x)),
+										(int16)(vertical_tile_num + (screenshot_globals->resolution_multiplier * y)),
 										0);
 									*address_1 = *address_0;
 								}

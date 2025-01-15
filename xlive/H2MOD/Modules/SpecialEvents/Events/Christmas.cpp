@@ -90,7 +90,7 @@ void christmas_event_map_load(void)
 		weat_block->weather_system.group.group = _tag_group_weather_system;
 		weat_block->weather_system.index = snow_datum;
 
-		for (size_t i = 0; i < bsp_definition->clusters.count; ++i)
+		for (int32 i = 0; i < bsp_definition->clusters.count; ++i)
 		{
 			bsp_definition->clusters[i]->weather_index = (int16)bsp_definition->weather_palette.count - 1;
 		}
@@ -103,12 +103,12 @@ void christmas_event_map_load(void)
 
 		sword_model->render_model.index = candy_cane_datum;
 
-		for (size_t i = 0; i < sword_weapon->weapon.player_interface.first_person.count; ++i)
+		for (int32 i = 0; i < sword_weapon->weapon.player_interface.first_person.count; ++i)
 		{
 			sword_weapon->weapon.player_interface.first_person[i]->model.index = candy_cane_datum;
 		}
 
-		for (size_t i = 0; i < sword_weapon->object.attachments.count; ++i)
+		for (int32 i = 0; i < sword_weapon->object.attachments.count; ++i)
 		{
 			object_attachment_definition* attachment = sword_weapon->object.attachments[i];
 			attachment->type.index = NONE;

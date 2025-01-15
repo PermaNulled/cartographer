@@ -137,7 +137,7 @@ void __cdecl render_submit_transparent_hologram_geometry(uint32* a1)
 			D3DTEXF_LINEAR);
 	}
 
-	render_section_visibility_compute(0, flags | 0xFFFFFFCF, model_group_index, NONE, 0, NONE, 0, true);
+	render_section_visibility_compute(0, flags | ~48, (uint8)model_group_index, NONE, 0, NONE, 0, true);
 
 	render_scene_geometry(_collection_type_0, _render_layer_texture_accumulate);
 	render_scene_geometry(_collection_type_0, _render_layer_lightmap_indirect);

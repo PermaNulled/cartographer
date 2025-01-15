@@ -259,7 +259,7 @@ void Infection::onGameTick()
 
 			// check the difference between game time now
 			// if the time wasn't updated for more than 5 seconds, end the game
-			if (game_ticks_to_seconds(get_game_time_ticks() - last_time_at_game_should_not_end) > 5.0f)
+			if (game_ticks_to_seconds((real32)(get_game_time_ticks() - last_time_at_game_should_not_end)) > 5.f)
 			{
 				NetworkSession::EndGame();
 			}

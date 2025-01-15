@@ -6,10 +6,6 @@
 #include "tag_files/global_string_ids.h"
 #include "physics/character_physics_mode_melee.h"
 
-#include "H2MOD/Modules/Shell/Config.h"
-
-FLOATING_POINT_ENV_ACCESS();
-
 namespace MeleeFix
 {
 	//////////////////////////////////////////////////////
@@ -105,7 +101,7 @@ namespace MeleeFix
 
 				if (currentFrame >= actionFrame - leeway && currentFrame <= actionFrame + leeway)
 				{
-					p_melee_damage(object_index, melee_type, biped_melee_info->field_30, (float)(unsigned __int8)biped_melee_info->field_31 * 0.0039215689);
+					p_melee_damage(object_index, melee_type, biped_melee_info->field_30, (real32)(uint8)biped_melee_info->field_31 * 0.003921569f);
 					if (MeleeHit) 
 					{
 						LOG_TRACE_GAME("[MeleeFix] Melee Hit!");
@@ -125,8 +121,8 @@ namespace MeleeFix
 			// this is used only for sword
 			if (melee_type == _string_id_melee_dash || melee_type == _string_id_melee_dash_airborne)
 			{
-				float melee_max_duration = melee_type == _string_id_melee_dash_airborne ? 0.22 : 0.15000001;
-				int melee_max_ticks = time_globals::seconds_to_ticks_round(melee_max_duration);
+				real32 melee_max_duration = melee_type == _string_id_melee_dash_airborne ? 0.22f : 0.15f;
+				int32 melee_max_ticks = time_globals::seconds_to_ticks_round(melee_max_duration);
 				if (melee_max_ticks < 0 || p_melee_get_time_to_target(object_index) <= melee_max_ticks)
 					abort_melee_action = true;
 			}
@@ -134,7 +130,7 @@ namespace MeleeFix
 				&& !melee_next_animation_hook(object_index, 0, -1, biped_melee_info->field_30))
 			{
 				biped_melee_info->melee_flags &= 0xF7FFFFFF;
-				biped_melee_info->melee_type_string_id = -1;
+				biped_melee_info->melee_type_string_id = NONE;
 				MeleeHit = false;
 			}
 		}

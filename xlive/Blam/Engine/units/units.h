@@ -34,7 +34,7 @@ enum e_unit_weapons
 	unit_weapons_dual_weild_weapon
 };
 
-enum e_unit_data_flags : int32
+enum e_unit_data_flags : uint32
 {
 	_unit_is_actively_controlled = FLAG(1),
 	_unit_is_alive = FLAG(2),
