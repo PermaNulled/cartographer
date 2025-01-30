@@ -960,7 +960,7 @@ bool XSocketManager::CreateSocketUDP(XInternalSocket* sock, unsigned long interf
 
 	} while (0);
 
-	if (s != INVALID_SOCKET)
+	if (success)
 	{
 		sock->m_systemSockHandle = s;
 		sock->m_port = port;
