@@ -19,6 +19,7 @@
 
 #define k_h2config_version_number "1"
 #define k_h2config_version_section "H2ConfigurationVersion:" k_h2config_version_number
+#define k_h2config_version_debug_section "Debug:" k_h2config_version_number
 
 bool g_force_cartographer_update = false;
 
@@ -124,6 +125,9 @@ get_config_entry(CSimpleIniA* simple_ini, const char* section_key, const char* c
 #define CONFIG_GET(_simple_ini, _config_name, _default_setting, _out_value) \
 	get_config_entry(_simple_ini, k_h2config_version_section, _config_name, _default_setting, _out_value)
 
+#define CONFIG_GET_DEBUG_KEY(_simple_ini, _config_name, _default_setting, _out_value) \
+	get_config_entry(_simple_ini, k_h2config_version_debug_section, _config_name, _default_setting, _out_value)
+
 template<typename T>
 static std::enable_if_t<std::is_integral_v<T> && !std::is_same_v<T, char>, bool>
 set_config_entry(CSimpleIniA* simple_ini, const char* section_key, const char* config_name, T* value, const char* comment = NULL)
@@ -172,6 +176,9 @@ set_config_entry(CSimpleIniA* simple_ini, const char* section_key, const char* c
 // and without
 #define CONFIG_SET(_simple_ini, _config_name, _value) \
 	set_config_entry(_simple_ini, k_h2config_version_section, _config_name, _value)
+
+#define CONFIG_SET_DEBUG_KEY(_simple_ini, _config_name, _value) \
+	set_config_entry(_simple_ini, k_h2config_version_debug_section, _config_name, _value)
 
 e_override_texture_resolution H2Config_Override_Shadows;
 e_override_texture_resolution H2Config_Override_Water;
@@ -474,10 +481,6 @@ void SaveH2Config() {
 
 		CONFIG_SET(&ini, "enable_xdelay", &H2Config_xDelay);
 
-		CONFIG_SET(&ini, "debug_log", &H2Config_debug_log);
-		CONFIG_SET(&ini, "debug_log_level", &H2Config_debug_log_level);
-		CONFIG_SET(&ini, "debug_log_console", &H2Config_debug_log_console);
-
 		if (Memory::IsDedicatedServer()) {
 			CONFIG_SET(&ini, "server_name", H2Config_dedi_server_name);
 
@@ -518,6 +521,10 @@ void SaveH2Config() {
 			CONFIG_SET_C(&ini, "hotkey_guide", H2Config_hotkeyIdGuide, std::string("# " + GetVKeyCodeString(H2Config_hotkeyIdGuide)).c_str());
 			CONFIG_SET_C(&ini, "hotkey_console", H2Config_hotkeyIdConsole, std::string("# " + GetVKeyCodeString(H2Config_hotkeyIdConsole)).c_str());
 		}
+
+		CONFIG_SET_DEBUG_KEY(&ini, "debug_log", &H2Config_debug_log);
+		CONFIG_SET_DEBUG_KEY(&ini, "debug_log_level", &H2Config_debug_log_level);
+		CONFIG_SET_DEBUG_KEY(&ini, "debug_log_console", &H2Config_debug_log_console);
 
 		ini.SaveFile(fileConfig);
 
@@ -598,9 +605,9 @@ void ReadH2Config() {
 			CONFIG_GET(&ini, "upnp", "true", &H2Config_upnp_enable);
 			CONFIG_GET(&ini, "enable_xdelay", "true", &H2Config_xDelay);
 
-			CONFIG_GET(&ini, "debug_log", "false", &H2Config_debug_log);
-			CONFIG_GET(&ini, "debug_log_level", "2", &H2Config_debug_log_level);
-			CONFIG_GET(&ini, "debug_log_console", "false", &H2Config_debug_log_console);
+			CONFIG_GET_DEBUG_KEY(&ini, "debug_log", "false", &H2Config_debug_log);
+			CONFIG_GET_DEBUG_KEY(&ini, "debug_log_level", "2", &H2Config_debug_log_level);
+			CONFIG_GET_DEBUG_KEY(&ini, "debug_log_console", "false", &H2Config_debug_log_console);
 
 			const char* ip_lan = nullptr;
 			CONFIG_GET(&ini, "lan_ip", "", &ip_lan);
