@@ -51,6 +51,7 @@ namespace CommandCollection
 	int _screenshot_cubemap(const std::vector<std::string>& tokens, ConsoleCommandCtxData ctx);
 	int SetAddressLANIpv4(const std::vector<std::string>& tokens, ConsoleCommandCtxData ctx);
 	int SetAddressBroadcastIpv4(const std::vector<std::string>& tokens, ConsoleCommandCtxData ctx);
+	int SetPortNumber(const std::vector<std::string>& tokens, ConsoleCommandCtxData ctx);
 
 	// misc
 	void ObjectSpawn(datum object_idx, int count, const real_point3d* position, const real_vector3d* rotation, float randomMultiplier, bool sameTeam);

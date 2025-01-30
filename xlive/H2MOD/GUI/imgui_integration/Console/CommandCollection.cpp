@@ -45,6 +45,9 @@ ComVarFromPtr(rumble_var_cmd, real32, &g_rumble_factor,
 ComVarFromPtr(debug_render_horizontal_splitscreen, bool, &g_debug_render_horizontal_splitscreen,
 	"var_debug_render_horizontal_splitscreen", "force horizontal spliscreen split", 0, 1, CommandCollection::BoolVarHandlerCmd);
 
+ComVarFromPtr(h2config_set_base_port, unsigned short, &H2Config_base_port,
+	"var_network_port", "change the network port used to connect over the network", 1, 1, CommandCollection::SetPortNumber);
+
 ComVarFromPtrIpv4(h2config_set_lan_ipv4_address, &H2Config_ip_lan,
 	"var_lan_ip_address_override", "sets the LAN override address of the local machine", 1, 1, CommandCollection::SetAddressLANIpv4);
 
@@ -67,6 +70,7 @@ void CommandCollection::InitializeCommands()
 	InsertCommand(new ConsoleCommand(debug_render_horizontal_splitscreen));
 	InsertCommand(new ConsoleCommand(h2config_set_lan_ipv4_address));
 	InsertCommand(new ConsoleCommand(h2config_set_broadcast_ipv4_address));
+	InsertCommand(new ConsoleCommand(h2config_set_base_port));
 	InsertCommand(new ConsoleCommand("help", "outputs all commands, 0 - 1 parameter(s): <string>(optional): command name", 0, 1, CommandCollection::HelpCmd));
 	InsertCommand(new ConsoleCommand("log_peers", "logs all peers to console, 0 parameter(s)", 0, 0, CommandCollection::LogPeersCmd));
 	InsertCommand(new ConsoleCommand("log_players", "logs all players to console, 0 parameter(s)", 0, 0, CommandCollection::LogPlayersCmd));
@@ -1034,6 +1038,42 @@ int CommandCollection::SetAddressBroadcastIpv4(const std::vector<std::string>& t
 	{
 		outputCb(StringFlag_None, "# broadcast address override cannot be updated during a game session!");
 		return -1;
+	}
+
+	return SetAddressIpv4HandlerCmd(tokens, ctx);
+}
+
+int CommandCollection::SetPortNumber(const std::vector<std::string>& tokens, ConsoleCommandCtxData ctx)
+{
+	TextOutputCb* outputCb = ctx.outputCb;
+
+	if (gXnIpMgr.GetLocalUserXn()->m_valid)
+	{
+		outputCb(StringFlag_None, "# set the port number before LOGIN, during the \"PRESS ANY KEY\" dialog, when signed-out!");
+		return -1;
+	}
+
+	if (network_life_cycle_in_squad_session(NULL))
+	{
+		outputCb(StringFlag_None, "# port number configuration cannot be updated during a game session!");
+		return -1;
+	}
+
+	unsigned short port;
+	if (ComVar(&port).SetFromStr(tokens[1]))
+	{
+		if (port > 1000 && port < 65534)
+		{
+			H2Config_base_port = port;
+		}
+		else
+		{
+			outputCb(StringFlag_None, "# invalid port number, a number between 1000 and 65534 is expected");
+		}
+	}
+	else
+	{
+		outputCb(StringFlag_None, "# invalid port number, a number between 1000 and 65534 is expected");
 	}
 
 	return SetAddressIpv4HandlerCmd(tokens, ctx);
