@@ -90,6 +90,8 @@ public:
 				free(cur);
 				break;
 			}
+
+			cur = cur->next;
 		}
 	}
 
