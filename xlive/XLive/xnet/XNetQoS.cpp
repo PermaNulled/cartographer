@@ -325,7 +325,7 @@ void CXNetQoS::Listener()
 
 		serverAddr.sin_family = AF_INET;
 		serverAddr.sin_addr.s_addr = htonl(INADDR_ANY); // anyone can connect
-		serverAddr.sin_port = htons(H2Config_base_port + 10);
+		serverAddr.sin_port = htons(H2Config_base_port + 1);
 
 		DWORD dwBytes = 0;
 		GUID GuidAcceptEx = WSAID_ACCEPTEX;
