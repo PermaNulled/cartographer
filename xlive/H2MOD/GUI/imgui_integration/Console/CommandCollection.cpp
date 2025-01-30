@@ -1076,5 +1076,5 @@ int CommandCollection::SetPortNumber(const std::vector<std::string>& tokens, Con
 		outputCb(StringFlag_None, "# invalid port number, a number between 1000 and 65534 is expected");
 	}
 
-	return SetAddressIpv4HandlerCmd(tokens, ctx);
+	return 0;
 }
