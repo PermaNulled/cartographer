@@ -8,7 +8,6 @@
 #include "XLive/xnet/net_utils.h"
 
 XSocketManager g_XSockMgr;
-std::vector<XVirtualSocket*> XSocketManager::sockets;
 
 // #5310: XOnlineStartup
 int WINAPI XOnlineStartup()
@@ -69,7 +68,7 @@ SOCKET WINAPI XSocketCreate(int af, int type, int protocol)
 	}
 
 	LOG_TRACE_NETWORK("XSocketCreate() - Socket created with descriptor: {}.", ret);
-	newXSocket->winSockHandle = ret;
+	newXSocket->systemSocketHandle = ret;
 
 	if (newXSocket->isVoiceProtocol)
 	{
@@ -81,7 +80,7 @@ SOCKET WINAPI XSocketCreate(int af, int type, int protocol)
 
 	/*DWORD ioctlSetting = 0;
 	DWORD cbBytesReturned;
-	if (WSAIoctl(newXSocket->winSockHandle, SIO_UDP_CONNRESET, &ioctlSetting, 4u, 0, 0, &cbBytesReturned, 0, 0) == SOCKET_ERROR)
+	if (WSAIoctl(newXSocket->systemSocketHandle, SIO_UDP_CONNRESET, &ioctlSetting, 4u, 0, 0, &cbBytesReturned, 0, 0) == SOCKET_ERROR)
 	{
 		LOG_ERROR_NETWORK("XSocketCreate() - couldn't disable SIO_UDP_CONNRESET", ret);
 	}
@@ -90,7 +89,7 @@ SOCKET WINAPI XSocketCreate(int af, int type, int protocol)
 		LOG_TRACE_NETWORK("XSocketCreate() - disabled SIO_UDP_CONNRESET");
 	}*/
 
-	XSocketManager::sockets.push_back(newXSocket);
+	g_XSockMgr.sockets.push_back(newXSocket);
 
 	/*newXSocket->SetBufferSize(SO_SNDBUF, gXnIpMgr.GetMinSockSendBufferSizeInBytes());
 	newXSocket->SetBufferSize(SO_RCVBUF, gXnIpMgr.GetMinSockRecvBufferSizeInBytes());*/
@@ -103,7 +102,7 @@ int WINAPI XSocketShutdown(SOCKET s, int how)
 {
 	LOG_TRACE_NETWORK("XSocketShutdown");
 	XVirtualSocket* xsocket = (XVirtualSocket*)s;
-	return shutdown(xsocket->winSockHandle, how);
+	return shutdown(xsocket->systemSocketHandle, how);
 }
 
 // #6: XSocketIOCTLSocket
@@ -112,7 +111,7 @@ int WINAPI XSocketIOCTLSocket(SOCKET s, long cmd, u_long* argp)
 	XVirtualSocket* xsocket = (XVirtualSocket*)s;
 
 	LOG_TRACE_NETWORK("XSocketIOCTLSocket() - cmd: {}", IOCTLSocket_cmd_string(cmd).c_str());
-	int ret = ioctlsocket(xsocket->winSockHandle, cmd, argp);
+	int ret = ioctlsocket(xsocket->systemSocketHandle, cmd, argp);
 
 	if (ret == NO_ERROR)
 	{
@@ -138,7 +137,7 @@ int WINAPI XSocketSetSockOpt(SOCKET s, int level, int optname, const char* optva
 	XVirtualSocket* xsocket = (XVirtualSocket*)s;
 
 	LOG_TRACE_NETWORK("XSocketSetSockOpt  (socket = {:x}, level = {}, optname = {},  optlen = {})",
-		xsocket->winSockHandle, level, sockOpt_string(optname), optlen);
+		xsocket->systemSocketHandle, level, sockOpt_string(optname), optlen);
 
 	if (optname == SO_SNDBUF
 		|| optname == SO_RCVBUF)
@@ -153,7 +152,7 @@ int WINAPI XSocketSetSockOpt(SOCKET s, int level, int optname, const char* optva
 		return 0;
 	}
 
-	int ret = setsockopt(xsocket->winSockHandle, level, optname, optval, optlen);
+	int ret = setsockopt(xsocket->systemSocketHandle, level, optname, optval, optlen);
 	if (ret == SOCKET_ERROR)
 	{
 		LOG_TRACE_NETWORK("XSocketSetSockOpt() - error: {}", WSAGetLastError());
@@ -175,7 +174,7 @@ int WINAPI XSocketGetSockOpt(SOCKET s, int level, int optname, char* optval, int
 		return 0;
 	}
 
-	return getsockopt(xsocket->winSockHandle, level, optname, optval, optlen);
+	return getsockopt(xsocket->systemSocketHandle, level, optname, optval, optlen);
 }
 
 // #9: XSocketGetSockName
@@ -183,7 +182,7 @@ int WINAPI XSocketGetSockName(SOCKET s, struct sockaddr* name, int* namelen)
 {
 	LOG_TRACE_NETWORK("XSocketGetSockName()");
 	XVirtualSocket* xsocket = (XVirtualSocket*)s;
-	return getsockname(xsocket->winSockHandle, name, namelen);
+	return getsockname(xsocket->systemSocketHandle, name, namelen);
 }
 
 // #10
@@ -193,7 +192,7 @@ int WINAPI XSocketGetPeerName(SOCKET s, struct sockaddr* name, int* namelen)
 	XVirtualSocket* xsocket = (XVirtualSocket*)s;
 
 	if (xsocket->IsTCP())
-		return getpeername(xsocket->winSockHandle, name, namelen);
+		return getpeername(xsocket->systemSocketHandle, name, namelen);
 	else
 		return WSAENOTCONN;
 }
@@ -204,9 +203,9 @@ int WINAPI XSocketConnect(SOCKET s, const struct sockaddr* name, int namelen)
 {
 	XVirtualSocket* xsocket = (XVirtualSocket*)s;
 	LOG_TRACE_NETWORK("XSocketConnect  (socket = {0:x}, name = {1:p}, namelen = {2})",
-		xsocket->winSockHandle, (void*)name, namelen);
+		xsocket->systemSocketHandle, (void*)name, namelen);
 
-	return connect(xsocket->winSockHandle, name, namelen);
+	return connect(xsocket->systemSocketHandle, name, namelen);
 }
 
 
@@ -215,9 +214,9 @@ int WINAPI XSocketListen(SOCKET s, int backlog)
 {
 	XVirtualSocket* xsocket = (XVirtualSocket*)s;
 	LOG_TRACE_NETWORK("XSocketListen  (socket = {0:x}, backlog = {1:x})",
-		xsocket->winSockHandle, backlog);
+		xsocket->systemSocketHandle, backlog);
 
-	return listen(xsocket->winSockHandle, backlog);
+	return listen(xsocket->systemSocketHandle, backlog);
 }
 
 
@@ -227,9 +226,9 @@ SOCKET WINAPI XSocketAccept(SOCKET s, struct sockaddr* addr, int* addrlen)
 	XVirtualSocket* xsocket = (XVirtualSocket*)s;
 
 	LIMITED_LOG(35, LOG_TRACE_NETWORK, "XSocketAccept  (socket = {0:x}, addr = {1:p}, addrlen = {2})",
-		xsocket->winSockHandle, (void*)addr, *addrlen);
+		xsocket->systemSocketHandle, (void*)addr, *addrlen);
 
-	return accept(xsocket->winSockHandle, addr, addrlen);
+	return accept(xsocket->systemSocketHandle, addr, addrlen);
 }
 
 
@@ -246,9 +245,9 @@ BOOL WINAPI XSocketWSAGetOverlappedResult(SOCKET s, LPWSAOVERLAPPED lpOverlapped
 {
 	XVirtualSocket* xsocket = (XVirtualSocket*)s;
 	LOG_TRACE_NETWORK("XSocketWSAGetOverlappedResult  (socket = {0:x}, lpWSAOverlapped = {1:p}, lpcbTransfer = {2:p}, fWait = {3}, lpdwFlags = {4:p})",
-		xsocket->winSockHandle, (void*)lpOverlapped, (void*)lpcbTransfer, fWait, (void*)lpdwFlags);
+		xsocket->systemSocketHandle, (void*)lpOverlapped, (void*)lpcbTransfer, fWait, (void*)lpdwFlags);
 
-	return WSAGetOverlappedResult(xsocket->winSockHandle, lpOverlapped, lpcbTransfer, fWait, lpdwFlags);
+	return WSAGetOverlappedResult(xsocket->systemSocketHandle, lpOverlapped, lpcbTransfer, fWait, lpdwFlags);
 }
 
 // #17
@@ -258,7 +257,29 @@ BOOL WINAPI XSocketWSACancelOverlappedIO(HANDLE hFile)
 	return CancelIo(hFile);
 }
 
-int XVirtualSocket::read_system_socket(
+static int read_system_socket(
+	SOCKET s,
+	LPWSABUF lpBuffers,
+	DWORD dwBufferCount,
+	LPDWORD lpNumberOfBytesRecvd,
+	LPDWORD lpFlags,
+	struct sockaddr* lpFrom,
+	LPINT lpFromlen,
+	LPWSAOVERLAPPED lpOverlapped,
+	LPWSAOVERLAPPED_COMPLETION_ROUTINE lpCompletionRoutine
+)
+{
+	int result;
+#if XSOCK_USING_STANDARD_APIS
+	result = ::recvfrom(s, lpBuffers->buf, lpBuffers->len, *lpFlags, lpFrom, lpFromlen);
+	*lpNumberOfBytesRecvd = result;
+#else
+	result = WSARecvFrom(s, lpBuffers, dwBufferCount, lpNumberOfBytesRecvd, lpFlags, lpFrom, lpFromlen, lpOverlapped, lpCompletionRoutine);
+#endif
+	return result;
+}
+
+int XVirtualSocket::read_socket(
 	LPWSABUF lpBuffers,
 	DWORD dwBufferCount,
 	LPDWORD lpNumberOfBytesRecvd,
@@ -276,7 +297,7 @@ int XVirtualSocket::read_system_socket(
 		|| lpFrom == NULL)
 	{
 		return WSARecv(
-			this->winSockHandle,
+			this->systemSocketHandle,
 			lpBuffers,
 			dwBufferCount,
 			lpNumberOfBytesRecvd,
@@ -285,21 +306,18 @@ int XVirtualSocket::read_system_socket(
 			lpCompletionRoutine);
 	}
 
-#if XSOCK_USING_STANDARD_APIS
-	int result = ::recvfrom(this->winSockHandle, lpBuffers->buf, lpBuffers->len, *lpFlags, lpFrom, lpFromlen);
-	*lpNumberOfBytesRecvd = result;
-#else
-	int result = WSARecvFrom(this->winSockHandle, lpBuffers, dwBufferCount, lpNumberOfBytesRecvd, lpFlags, lpFrom, lpFromlen, lpOverlapped, lpCompletionRoutine);
-#endif
+	int result = read_system_socket(systemSocketHandle, lpBuffers, dwBufferCount, lpNumberOfBytesRecvd, lpFlags, lpFrom, lpFromlen, lpOverlapped, lpCompletionRoutine);
 
-	if (this->IsBroadcast())
+	bool mainSocketEmpty = result == SOCKET_ERROR
+		&& WSAGetLastError() == WSAEWOULDBLOCK;
+
+	if (mainSocketEmpty)
 	{
-		// check if there's an error
-		// and if that error is WSAEWOULDBLOCK
-		// prioritize other type of data over broadcast
-		if (result == SOCKET_ERROR
-			&& WSAGetLastError() == WSAEWOULDBLOCK)
+		if (this->IsBroadcast())
 		{
+			// check if there's an error
+			// and if that error is WSAEWOULDBLOCK
+			// prioritize other type of data over broadcast
 			// read the broadcast data, if system-link is properly initialized
 			if (g_XSockMgr.SystemLinkAvailable())
 			{
@@ -307,14 +325,20 @@ int XVirtualSocket::read_system_socket(
 				{
 					if (g_XSockMgr.SystemLinkGetSystemSockHandle(i) != INVALID_SOCKET)
 					{
-#if XSOCK_USING_STANDARD_APIS
-						result = ::recvfrom(g_XSockMgr.SystemLinkGetSystemSockHandle(i), lpBuffers->buf, lpBuffers->len, *lpFlags, lpFrom, lpFromlen);
-						*lpNumberOfBytesRecvd = result;
-#else
-						result = WSARecvFrom(g_XSockMgr.SystemLinkGetSystemSockHandle(i), lpBuffers, dwBufferCount, lpNumberOfBytesRecvd, lpFlags, lpFrom, lpFromlen, lpOverlapped, lpCompletionRoutine);
-#endif
+						result = read_system_socket(
+							g_XSockMgr.SystemLinkGetSystemSockHandle(i), 
+							lpBuffers,
+							dwBufferCount,
+							lpNumberOfBytesRecvd, 
+							lpFlags,
+							lpFrom,
+							lpFromlen, 
+							lpOverlapped, 
+							lpCompletionRoutine);
+
 						if (result != SOCKET_ERROR)
 						{
+							mainSocketEmpty = false;
 							break;
 						}
 					}
@@ -323,6 +347,23 @@ int XVirtualSocket::read_system_socket(
 		}
 	}
 
+	// ### TODO FIXME this might be better to be executed asynchronously, in another network thread, handling connections
+	// but for now just leverage the current Halo 2's behaviour of polling all network sockets, and read our network data here in case 
+	if (mainSocketEmpty)
+	{
+		// read the main xnet socket
+		result = read_system_socket(
+			g_XSockMgr.GetMainUdpSocketSystemHandle(),
+			lpBuffers,
+			dwBufferCount,
+			lpNumberOfBytesRecvd,
+			lpFlags,
+			lpFrom,
+			lpFromlen,
+			lpOverlapped,
+			lpCompletionRoutine);
+	}
+	
 	if (result == SOCKET_ERROR)
 	{
 		*lpNumberOfBytesRecvd = 0;
@@ -350,7 +391,7 @@ int XVirtualSocket::sock_read(LPWSABUF lpBuffers,
 	{
 		bool errorByAPI = false;
 
-		int result = read_system_socket(lpBuffers, dwBufferCount, lpNumberOfBytesRecvd, lpFlags, lpFrom, lpFromlen, lpOverlapped, lpCompletionRoutine, &errorByAPI);
+		int result = read_socket(lpBuffers, dwBufferCount, lpNumberOfBytesRecvd, lpFlags, lpFrom, lpFromlen, lpOverlapped, lpCompletionRoutine, &errorByAPI);
 
 		if (result == SOCKET_ERROR)
 		{
@@ -395,7 +436,7 @@ int WINAPI XSocketWSASendTo(SOCKET s, LPWSABUF lpBuffers, DWORD dwBufferCount, L
 	if (xsocket->IsTCP() || inTo == NULL)
 	{
 		return WSASend(
-			xsocket->winSockHandle,
+			xsocket->systemSocketHandle,
 			lpBuffers,
 			dwBufferCount,
 			lpNumberOfBytesSent,
@@ -468,10 +509,8 @@ int WINAPI XSocketWSASendTo(SOCKET s, LPWSABUF lpBuffers, DWORD dwBufferCount, L
 	{
 		sockaddr_in sendToAddr;
 		ZeroMemory(&sendToAddr, sizeof(sendToAddr));
-
 		sendToAddr.sin_family = AF_INET;
 		sendToAddr.sin_addr = xnIp->GetOnlineIpAddr();
-		sendToAddr.sin_port = inTo->sin_port;
 
 		// check if the online ip address is the same as the local one
 		// and if the online ip address of the connection is 0, fall back to LAN address
@@ -482,28 +521,21 @@ int WINAPI XSocketWSASendTo(SOCKET s, LPWSABUF lpBuffers, DWORD dwBufferCount, L
 			sendToAddr.sin_addr = xnIp->GetLanIpAddr();
 		}
 
-		switch (ntohs(inTo->sin_port))
+		switch (xnIp->GetConnectStatus())
 		{
-		case 1000:
+		case XNET_CONNECT_STATUS_IDLE:
+		case XNET_CONNECT_STATUS_PENDING:
 			sendToAddr.sin_port = xnIp->m_xnaddr.wPortOnline;
-			if (!xsocket->SockAddrInInvalid(xnIp->NatGetAddr(H2v_sockets::Sock1000)))
+			break;
+		case XNET_CONNECT_STATUS_CONNECTED:
+			sendToAddr.sin_port = xnIp->m_xnaddr.wPortOnline;
+			const sockaddr_in* mapping = xnIp->GetPortMapping(inTo->sin_port);
+			if (!xsocket->SockAddrInInvalid(mapping))
 			{
 				// if there's nat data use it
-				sendToAddr = *xnIp->NatGetAddr(H2v_sockets::Sock1000);
+				sendToAddr = *mapping;
 			}
 			break;
-
-		case 1001:
-			sendToAddr.sin_port = htons(ntohs(xnIp->m_xnaddr.wPortOnline) + 1);
-			if (!xsocket->SockAddrInInvalid(xnIp->NatGetAddr(H2v_sockets::Sock1001)))
-			{
-				sendToAddr = *xnIp->NatGetAddr(H2v_sockets::Sock1001);
-			}
-			break;
-
-		default:
-			LOG_CRITICAL_NETWORK("XSocketSendTo() port: {} not matched!", ntohs(xnIp->m_xnaddr.wPortOnline));
-			return SOCKET_ERROR;
 		}
 
 		int result = SOCKET_ERROR;
@@ -513,7 +545,7 @@ int WINAPI XSocketWSASendTo(SOCKET s, LPWSABUF lpBuffers, DWORD dwBufferCount, L
 #if XSOCK_USING_STANDARD_APIS
 		for (DWORD i = 0ul; i < dwBufferCount; i++)
 		{
-			result = sendto(xsocket->winSockHandle, lpBuffers[i].buf, lpBuffers[i].len, dwFlags, (const sockaddr*)&sendToAddr, sizeof(sendToAddr));
+			result = sendto(xsocket->systemSocketHandle, lpBuffers[i].buf, lpBuffers[i].len, dwFlags, (const sockaddr*)&sendToAddr, sizeof(sendToAddr));
 			if (result == SOCKET_ERROR)
 				break;
 
@@ -521,7 +553,7 @@ int WINAPI XSocketWSASendTo(SOCKET s, LPWSABUF lpBuffers, DWORD dwBufferCount, L
 			dwNumberOfBytesSent += result;
 		}
 #else
-		result = WSASendTo(xsocket->winSockHandle, lpBuffers, dwBufferCount, &dwNumberOfBytesSent, dwFlags, (const sockaddr*)&sendToAddr, sizeof(sendToAddr), lpOverlapped, lpCompletionRoutine);
+		result = WSASendTo(xsocket->systemSocketHandle, lpBuffers, dwBufferCount, &dwNumberOfBytesSent, dwFlags, (const sockaddr*)&sendToAddr, sizeof(sendToAddr), lpOverlapped, lpCompletionRoutine);
 #endif // if XSOCK_USING_STANDARD_APIS
 
 		if (result == SOCKET_ERROR)
@@ -635,22 +667,22 @@ int WINAPI XSocketWSAEventSelect(SOCKET s, HANDLE hEventObject, __int32 lNetwork
 {
 	XVirtualSocket* xsocket = (XVirtualSocket*)s;
 	LOG_TRACE_NETWORK("XSocketWSAEventSelect()");
-	return WSAEventSelect(xsocket->winSockHandle, hEventObject, lNetworkEvents);
+	return WSAEventSelect(xsocket->systemSocketHandle, hEventObject, lNetworkEvents);
 }
 
 // #4
 int WINAPI XSocketClose(SOCKET s)
 {
 	XVirtualSocket* xsocket = (XVirtualSocket*)s;
-	LOG_TRACE_NETWORK("XSocketClose() - socket: {}", xsocket->winSockHandle);
+	LOG_TRACE_NETWORK("XSocketClose() - socket: {}", xsocket->systemSocketHandle);
 
-	int ret = closesocket(xsocket->winSockHandle);
+	int ret = closesocket(xsocket->systemSocketHandle);
 
-	for (auto i = XSocketManager::sockets.begin(); i != XSocketManager::sockets.end(); ++i)
+	for (auto i = g_XSockMgr.sockets.begin(); i != g_XSockMgr.sockets.end(); ++i)
 	{
 		if (*i == xsocket)
 		{
-			XSocketManager::sockets.erase(i);
+			g_XSockMgr.sockets.erase(i);
 			break;
 		}
 	}
@@ -667,31 +699,20 @@ SOCKET WINAPI XSocketBind(SOCKET s, const struct sockaddr* name, int namelen)
 
 	// copy socket ip/port
 	memcpy(&xsocket->name, name, sizeof(sockaddr_in));
+	u_short virtual_port = ((struct sockaddr_in*)name)->sin_port;
 
-	u_short virtual_port = (((struct sockaddr_in*)name)->sin_port);
+	sockaddr sockBind;
+	memset(&sockBind, 0, sizeof(sockBind));
 
-	switch (ntohs(virtual_port))
-	{
-	case 1000:
-		((struct sockaddr_in*)name)->sin_port = htons(H2Config_base_port);
-		break;
-	case 1001:
-		((struct sockaddr_in*)name)->sin_port = htons(H2Config_base_port + 1);
-		break;
-	case 1005:
-		((struct sockaddr_in*)name)->sin_port = htons(H2Config_base_port + 5);
-		break;
-	case 1006:
-		((struct sockaddr_in*)name)->sin_port = htons(H2Config_base_port + 6);
-		break;
-	default:
-		break;
-	}
+	sockaddr_in* sockBindInAddr = (sockaddr_in*)&sockBind;
+	sockBindInAddr->sin_family = AF_INET;
+	// ### TODO FIXME add configurable network adapter
+	sockBindInAddr->sin_addr.s_addr = htonl(INADDR_ANY);
+	sockBindInAddr->sin_port = htons(0);
 
-	LOG_TRACE_NETWORK("XSocketBind() - replaced virtual socket port - {} with: {}",
-		ntohs(virtual_port), ntohs(((struct sockaddr_in*)name)->sin_port));
+	LOG_TRACE_NETWORK("XSocketBind() - virtual socket port - {}", ntohs(virtual_port));
 
-	int ret = bind(xsocket->winSockHandle, name, namelen);
+	int ret = bind(xsocket->systemSocketHandle, &sockBind, namelen);
 
 	if (ret == SOCKET_ERROR)
 		LOG_TRACE_NETWORK("{} - SOCKET_ERROR", __FUNCTION__);
@@ -808,7 +829,7 @@ int XVirtualSocket::SetBufferSize(int optname, INT bufSize)
 	int bufOpt, bufOptSize;
 	bufOptSize = sizeof(bufOpt);
 
-	if (getsockopt(this->winSockHandle, SOL_SOCKET, optname, (char*)&bufOpt, &bufOptSize) == SOCKET_ERROR)
+	if (getsockopt(this->systemSocketHandle, SOL_SOCKET, optname, (char*)&bufOpt, &bufOptSize) == SOCKET_ERROR)
 	{
 		LOG_ERROR_NETWORK("{} - getsockopt() failed, last error : {}, cannot increase UDP nonblocking buffer size!", __FUNCTION__, WSAGetLastError());
 		return SOCKET_ERROR;
@@ -821,7 +842,7 @@ int XVirtualSocket::SetBufferSize(int optname, INT bufSize)
 	{
 		bufOpt = bufSize; // set the recvbuf to needed size
 		// increase socket recv buffer
-		if (setsockopt(this->winSockHandle, SOL_SOCKET, optname, (char*)&bufOpt, sizeof(bufOpt)) == SOCKET_ERROR) // then attempt to increase the buffer
+		if (setsockopt(this->systemSocketHandle, SOL_SOCKET, optname, (char*)&bufOpt, sizeof(bufOpt)) == SOCKET_ERROR) // then attempt to increase the buffer
 		{
 			LOG_ERROR_NETWORK("{} - setsockopt() failed, last error: {}", __FUNCTION__, WSAGetLastError());
 			return SOCKET_ERROR;
@@ -844,20 +865,28 @@ void XSocketManager::SocketsDisposeAll()
 		XSocketClose((SOCKET)xsocket);
 	}
 	sockets.clear();
+
+	SystemLinkDispose();
+	MainLinkDispose();
 }
 
 void XSocketManager::Initialize()
 {
 }
 
-bool XSocketManager::CreateSocket(XBroadcastSocket* sock, WORD port, bool multicast)
+void XSocketManager::Dispose()
+{
+	SocketsDisposeAll();
+}
+
+bool XSocketManager::CreateSocketUDP(XInternalSocket* sock, unsigned long interfaceAddress, WORD port, bool multicast)
 {
 	bool success = false;
 
 	IN_ADDR interfaceAddr; 
 
 	// ### TODO FIXME: allow choosing the network interface
-	interfaceAddr.s_addr = htonl(INADDR_ANY);
+	interfaceAddr.s_addr = interfaceAddress;
 	if (multicast)
 	{
 		interfaceAddr.s_addr = htonl(INADDR_LOOPBACK);
@@ -935,7 +964,7 @@ bool XSocketManager::CreateSocket(XBroadcastSocket* sock, WORD port, bool multic
 
 	} while (0);
 
-	if (success)
+	if (s != INVALID_SOCKET)
 	{
 		sock->m_systemSockHandle = s;
 		sock->m_port = port;
@@ -953,8 +982,8 @@ bool XSocketManager::CreateSocket(XBroadcastSocket* sock, WORD port, bool multic
 
 bool XSocketManager::SystemLinkSocketInitialize(WORD port)
 {
-	bool success = CreateSocket(&m_broadcastLANSock, port, false);
-	success |= CreateSocket(&m_broadcastLocalhostSock, htons(XSOCK_MULTICAST_PORT), true);
+	bool success = CreateSocketUDP(&m_broadcastLANSock, htonl(INADDR_ANY), port, false);
+	success |= CreateSocketUDP(&m_broadcastLocalhostSock, htonl(INADDR_ANY), htons(XSOCK_MULTICAST_PORT), true);
 
 	// ### FIXME return error code??
 	return success;
@@ -973,4 +1002,21 @@ void XSocketManager::SystemLinkDispose()
 		m_broadcastLANSock.Dispose();
 		m_broadcastLocalhostSock.Dispose();
 	}
+}
+
+bool XSocketManager::MainLinkSocketInitialize(WORD port) 
+{
+	bool success = CreateSocketUDP(&m_mainUdpSocket, htonl(INADDR_ANY), port, false);
+	return success;
+}
+
+bool XSocketManager::MainLinkSocketReset(WORD port) 
+{
+	MainLinkDispose();
+	return MainLinkSocketInitialize(port);
+}
+
+void XSocketManager::MainLinkDispose() 
+{
+	m_mainUdpSocket.Dispose();
 }

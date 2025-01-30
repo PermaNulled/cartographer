@@ -1,14 +1,14 @@
 #include "stdafx.h"
+
 #include "XnIp.h"
 
 #include "H2MOD/Utils/Utils.h"
+#include "H2MOD/Modules/Shell/Config.h"
+#include "H2MOD/Modules/Shell/Startup/Startup.h"
 
 #include "XLive/Cryptography/Rc4.h"
 #include "XLive/xnet/NIC.h"
 #include "XLive/xnet/net_utils.h"
-
-// The only needed sockets
-const uint16 g_needed_sockets[2] = { 1000, 1001 };
 
 XnIpManager gXnIpMgr;
 
@@ -16,10 +16,6 @@ XnIpManager gXnIpMgr;
 XnIp XnIpManager::m_ipLocal;
 
 XECRYPT_RC4_STATE gRc4StateRand;
-
-
-const char requestStrHdr[XNIP_MAX_PCK_STR_HDR_LEN] = "XNetBrOadPack";
-const char broadcastStrHdr[XNIP_MAX_PCK_STR_HDR_LEN] = "XNetReqPack";
 
 void XnIpManager::Initialize(const XNetStartupParams* netStartupParams)
 {
@@ -53,6 +49,11 @@ void XnIpManager::Initialize(const XNetStartupParams* netStartupParams)
 		m_startupParams.cfgSockDefaultSendBufsizeInK = SOCK_UDP_MIN_SEND_BUFFER_K_UNITS;
 
 	XNetRandom(NULL, 0);
+}
+
+void XnIpManager::Dispose()
+{
+	g_XSockMgr.Dispose();
 }
 
 XnIp* XnIpManager::GetConnection(const IN_ADDR ina) const
@@ -181,14 +182,14 @@ int XnIpManager::HandleRecvdPacket(XVirtualSocket* xsocket, sockaddr_in* lpFrom,
 	// check first if the packet received has the size bigger or equal to the XNet packet header first
 	if (*lpBytesRecvdCount >= sizeof(XNetPacketHeader))
 	{
-		XNetPacketHeader* XNetPck = reinterpret_cast<XNetPacketHeader*>(lpBuffers[0].buf);
-		switch (XNetPck->intHdr)
+		XNetPacketHeader* packet = reinterpret_cast<XNetPacketHeader*>(lpBuffers[0].buf);
+		switch (packet->signature)
 		{
-		case 'BrOd':
+		case EXNIP_PACKET_SIGNATURE_XNET_BROADCAST:
 		{
 			XBroadcastPacket* broadcastPck = reinterpret_cast<XBroadcastPacket*>(lpBuffers[0].buf);
 			if (*lpBytesRecvdCount >= sizeof(XBroadcastPacket)
-				&& strncmp(broadcastPck->pckHeader.HdrStr, broadcastStrHdr, XNIP_MAX_PCK_STR_HDR_LEN) == 0
+				&& strncmp(broadcastPck->pckHeader.signatureString, XNIP_BROADCAST_HEADER_STR, XNIP_MAX_PCK_STR_HDR_LEN) == 0
 				&& broadcastPck->data.name.sin_addr.s_addr == htonl(INADDR_BROADCAST))
 			{
 				if (*lpBytesRecvdCount > sizeof(XBroadcastPacket))
@@ -203,19 +204,19 @@ int XnIpManager::HandleRecvdPacket(XVirtualSocket* xsocket, sockaddr_in* lpFrom,
 		}
 		break;
 
-		case 'XNeT':
+		case EXNIP_PACKET_SIGNATURE_XNET_REQUEST:
 		{
-			XNetRequestPacket* XNetPck = reinterpret_cast<XNetRequestPacket*>(lpBuffers[0].buf);
+			XNetRequestPacket* requestPacket = reinterpret_cast<XNetRequestPacket*>(lpBuffers[0].buf);
 			if (*lpBytesRecvdCount == sizeof(XNetRequestPacket)
-				&& strncmp(XNetPck->pckHeader.HdrStr, requestStrHdr, XNIP_MAX_PCK_STR_HDR_LEN) == 0)
+				&& strncmp(requestPacket->pckHeader.signatureString, XNIP_REQUEST_HEADER_STR, XNIP_MAX_PCK_STR_HDR_LEN) == 0)
 			{
 				LOG_INFO_NETWORK("{} - Received XNetRequest type: {} from ip address {:X}, port: {}",
 					__FUNCTION__,
-					(int)XNetPck->data.reqType,
+					(int)requestPacket->data.reqType,
 					ntohl(lpFrom->sin_addr.s_addr),
 					ntohs(lpFrom->sin_port));
 
-				HandleXNetRequestPacket(xsocket, XNetPck, lpFrom, lpBytesRecvdCount); // save NAT info and send back a connection packet
+				HandleXNetRequestPacket(xsocket, requestPacket, lpFrom, lpBytesRecvdCount); // save NAT info and send back a connection packet
 
 				// set the bytes received count to 0
 				// should pool another packet after, so we keep the game fed with data
@@ -227,7 +228,7 @@ int XnIpManager::HandleRecvdPacket(XVirtualSocket* xsocket, sockaddr_in* lpFrom,
 
 		default:
 			break;
-		} // switch (XNetPck->intHdr)
+		} // switch (packet->signature)
 	}
 
 	IN_ADDR ipIdentifier;
@@ -262,30 +263,19 @@ int XnIpManager::GetEstablishedConnectionIdentifierByRecvAddr(XVirtualSocket* xs
 		if (xnIp->m_valid
 			&& xnIp->ConnectStatusConnected())
 		{
-			// TODO: get rid of H2v only sockets
-			switch (xsocket->GetHostOrderSocketVirtualPort())
+			const sockaddr_in* mapping = xnIp->GetPortMapping(xsocket->GetNetworkOrderSocketVirtualPort());
+
+			if (mapping == nullptr)
 			{
-			case 1000:
-				if (xsocket->SockAddrInEqual(fromAddr, xnIp->NatGetAddr(H2v_sockets::Sock1000)))
-				{
-					*outConnectionIdentifier = xnIp->GetConnectionId();
-					return 0;
-				}
-				break;
-
-			case 1001:
-				if (xsocket->SockAddrInEqual(fromAddr, xnIp->NatGetAddr(H2v_sockets::Sock1001)))
-				{
-					*outConnectionIdentifier = xnIp->GetConnectionId();
-					return 0;
-				}
-				break;
-
-			default:
-				// wtf?... unknown socket
-				LOG_CRITICAL_NETWORK("{} - unkown network socket!", __FUNCTION__);
+				LOG_ERROR_NETWORK("{} - no port mapping for ip address: {}:{}", __FUNCTION__, inet_ntoa(fromAddr->sin_addr), ntohs(fromAddr->sin_port));
 				return WSAEINVAL;
-			} // switch (xsocket->GetHostOrderSocketVirtualPort())
+			}
+
+			if (xsocket->SockAddrInEqual(fromAddr, mapping))
+			{
+				*outConnectionIdentifier = xnIp->GetConnectionId();
+				return 0;
+			}
 		}
 	}
 
@@ -329,7 +319,14 @@ void XnIpManager::SetupLocalConnectionInfo(unsigned long xnaddr, unsigned long l
 	HexStrToBytes(std::string(abOnline, sizeof(XNADDR::abOnline) * 2), m_ipLocal.m_xnaddr.abOnline, sizeof(XNADDR::abOnline));
 	m_ipLocal.m_pckStats.PckDataSampleUpdate();
 
-	m_ipLocal.m_valid = true;
+	m_ipLocal.m_valid = g_XSockMgr.MainLinkSocketInitialize(htons(baseport));
+}
+
+void XnIpManager::UnregisterLocalConnectionInfo()
+{
+	g_XSockMgr.MainLinkDispose();
+	m_ipLocal.DiscardPortMappings();
+	ZeroMemory(&m_ipLocal, sizeof(m_ipLocal));
 }
 
 void XnIpManager::ClearLostConnections()
@@ -354,11 +351,6 @@ XnIp* XnIpManager::GetLocalUserXn()
 	return &m_ipLocal;
 }
 
-void XnIpManager::UnregisterLocalConnectionInfo()
-{
-	ZeroMemory(&m_ipLocal, sizeof(m_ipLocal));
-}
-
 void XnIpManager::HandleXNetRequestPacket(XVirtualSocket* xsocket, const XNetRequestPacket* reqPacket, const sockaddr_in* recvAddr, LPDWORD lpBytesRecvdCount)
 {
 	IN_ADDR connectionIdentifier;
@@ -378,16 +370,16 @@ void XnIpManager::HandleXNetRequestPacket(XVirtualSocket* xsocket, const XNetReq
 		XnIp* xnIp = GetConnection(connectionIdentifier);
 		switch (reqPacket->data.reqType)
 		{
-		case XnIp_ConnectionUpdateNAT:
-		case XnIp_ConnectionEstablishSecure:
-		case XnIp_ConnectionDeclareConnected:
-		case XnIp_ConnectionCloseSecure:
+		case EXNIP_CONNECTION_PORT_MAPPING_UPDATE:
+		case EXNIP_CONNECTION_FINISH_ESTABLISH_SECURE_CHANNEL:
+		case EXNIP_CONNECTION_ACKNOWLEDGE_CONNECTED_SECURE_CHANNEL:
+		case EXNIP_CONNECTION_CLOSE_SECURE:
 			xnIp->HandleConnectionPacket(xsocket, reqPacket, recvAddr, lpBytesRecvdCount);
 			break;
 
 			// TODO:
-		case XnIp_ConnectionPing:
-		case XnIp_ConnectionPong:
+		case EXNIP_CONNECTION_PING:
+		case EXNIP_CONNECTION_PONG:
 			LOG_CRITICAL_NETWORK("{} - unimplemented request type: {}", __FUNCTION__, (int)reqPacket->data.reqType);
 			break;
 
@@ -482,6 +474,15 @@ int XnIpManager::RegisterNewXnIp(const XNADDR* pxna, const XNKID* pxnkid, IN_ADD
 
 			if (outIpIdentifier)
 				*outIpIdentifier = newXnIp->GetConnectionId();
+
+			for (auto socket : g_XSockMgr.sockets)
+			{
+				PortMapping map;
+				ZeroMemory(&map, sizeof(map));
+				map.virtualPort = socket->GetNetworkOrderSocketVirtualPort();
+				map.state = PortMapping::PortMapState::XNIP_NET_ADDRESS_MAPPINGS_UNAVAILABLE;
+				newXnIp->InsertPortMapping(&map);
+			}
 
 			return 0;
 		}
@@ -638,6 +639,8 @@ void XnIpManager::UnregisterXnIpIdentifier(const IN_ADDR ina)
 			__FUNCTION__,
 			XnIp::GetConnectionIndex(ina),
 			xnIp->GetConnectionId().s_addr);
+
+		xnIp->DiscardPortMappings();
 		SecureZeroMemory(xnIp, sizeof(*xnIp));
 	}
 }
@@ -724,54 +727,23 @@ int XnIp::GetConnectionIndex(IN_ADDR connectionId)
 	return (int)(connectionId.s_addr >> 24);
 }
 
-void XnIp::SaveNatInfo(XVirtualSocket* xsocket, const sockaddr_in* addr)
+void XnIp::SavePortMapping(XVirtualSocket* xsocket, WORD virtualPort, const sockaddr_in* addr)
 {
 	LOG_TRACE_NETWORK("{} - socket: {}, connection index: {}, identifier: {:X}", __FUNCTION__,
-		xsocket->winSockHandle, XnIp::GetConnectionIndex(GetConnectionId()), GetConnectionId().s_addr);
+		xsocket->systemSocketHandle, XnIp::GetConnectionIndex(GetConnectionId()), GetConnectionId().s_addr);
 
-	// TODO: handle dynamically
-	/*
-	   Store NAT data
-	   First we look at our socket's intended port.
-	   port 1000 is mapped to the receiving address/port xnIp->NatAddrSocket1000 via the connection identifier.
-	   port 1001 is mapped to the receiving address/port xnIp->NatAddrSocket1001 via the connection identifier.
-	*/
-
-	// TODO: get rid of H2v only sockets
-	switch (xsocket->GetHostOrderSocketVirtualPort())
-	{
-	case 1000:
-		//LOG_TRACE_NETWORK("SaveConnectionNatInfo() xnIp->NatAddrSocket1000 mapping port 1000 - port: {}, connection id: {:x}", htons(addr->sin_port), xnIp->GetConnectionId().s_addr);
-		NatUpdate(H2v_sockets::Sock1000, addr);
-		break;
-
-	case 1001:
-		//LOG_TRACE_NETWORK("SaveConnectionNatInfo() xnIp->NatAddrSocket1001 mapping port 1001 - port: {}, connection id: {:x}", htons(addr->sin_port), xnIp->GetConnectionId().s_addr);
-		NatUpdate(H2v_sockets::Sock1001, addr);
-		break;
-
-	default:
-		LOG_CRITICAL_NETWORK("{} - unkown network socket!", __FUNCTION__);
-		break;
-	} // switch (xsocket->GetHostOrderSocketVirtualPort())
+	UpdatePortMapping(virtualPort, addr);
 }
 
 void XnIp::SendXNetRequestAllSockets(eXnip_ConnectRequestType reqType)
 {
 	// send for each UDP socket, the other side may not have the NAT data
-	for (auto sockIt : XSocketManager::sockets)
+	for (auto sockIt : g_XSockMgr.sockets)
 	{
 		// connect only UDP sockets
 		if (sockIt->IsUDP())
 		{
-			for (uint32 i = 0; i < NUMBEROF(g_needed_sockets); i++)
-			{
-				if (sockIt->GetHostOrderSocketVirtualPort() == g_needed_sockets[i])
-				{
-					SendXNetRequest(sockIt, reqType);
-					break;
-				}
-			}
+			SendXNetRequest(sockIt, reqType);
 		}
 	}
 	return;
@@ -793,22 +765,23 @@ void XnIp::SendXNetRequest(XVirtualSocket* xsocket, eXnip_ConnectRequestType req
 	memcpy(reqPacket.data.nonceKey, m_nonce, sizeof(XnIp::m_nonce));
 	XNetGetTitleXnAddr(&reqPacket.data.xnaddr);
 
-	if (NatIsUpdated())
-		XNIP_SET_BIT(reqPacket.data.flags, XnIp_HasEndpointNATData, true);
+	if (PortMappingsAvailable())
+		XNIP_SET_BIT(reqPacket.data.flags, XnIp_HasPortMappingsUpdated, true);
 	reqPacket.data.connectionInitiator = !InitiatedConnectRequest();
+	reqPacket.data.senderVirtualPort = xsocket->GetNetworkOrderSocketVirtualPort();
 
 	switch (reqType)
 	{
-	case XnIp_ConnectionUpdateNAT:
-	case XnIp_ConnectionEstablishSecure:
+	case EXNIP_CONNECTION_PORT_MAPPING_UPDATE:
+	case EXNIP_CONNECTION_FINISH_ESTABLISH_SECURE_CHANNEL:
 		break;
 
-	case XnIp_ConnectionDeclareConnected:
+	case EXNIP_CONNECTION_ACKNOWLEDGE_CONNECTED_SECURE_CHANNEL:
 		break;
 
-	case XnIp_ConnectionCloseSecure:
-	case XnIp_ConnectionPong:
-	case XnIp_ConnectionPing:
+	case EXNIP_CONNECTION_CLOSE_SECURE:
+	case EXNIP_CONNECTION_PONG:
+	case EXNIP_CONNECTION_PING:
 		LOG_CRITICAL_NETWORK("{} - unimplemented requests!", __FUNCTION__);
 		break;
 
@@ -820,10 +793,11 @@ void XnIp::SendXNetRequest(XVirtualSocket* xsocket, eXnip_ConnectRequestType req
 
 	m_connectionPacketsSentCount++;
 
-	int ret = xsocket->UdpSend((char*)&reqPacket, sizeof(XNetRequestPacket), 0, (sockaddr*)&sendToAddr, sizeof(sendToAddr));
+	m_requestContext = true;
+	int udp_send_result = xsocket->UdpSend((char*)&reqPacket, sizeof(XNetRequestPacket), 0, (sockaddr*)&sendToAddr, sizeof(sendToAddr));
 	LOG_INFO_NETWORK("{} - request sent, socket handle: {}, connection index: {}, connection id: {:x}, n0nceKey: {}",
 		__FUNCTION__,
-		xsocket->winSockHandle,
+		xsocket->systemSocketHandle,
 		XnIp::GetConnectionIndex(GetConnectionId()),
 		GetConnectionId().s_addr,
 		ByteToHexStr(reqPacket.data.nonceKey, 8).c_str()
@@ -834,30 +808,30 @@ void XnIp::HandleConnectionPacket(XVirtualSocket* xsocket, const XNetRequestPack
 {
 	switch (reqPacket->data.reqType)
 	{
-	case XnIp_ConnectionUpdateNAT:
+	case EXNIP_CONNECTION_PORT_MAPPING_UPDATE:
 		if (GetConnectStatus() > XNET_CONNECT_STATUS_PENDING)
 		{
 			break;
 		}
 
-		SaveNatInfo(xsocket, recvAddr);
+		SavePortMapping(xsocket, reqPacket->data.senderVirtualPort, recvAddr);
 
 		// check if NAT is updated after we updated it
-		if (NatIsUpdated())
+		if (PortMappingsAvailable())
 		{
-			if (XNIP_TEST_BIT(reqPacket->data.flags, XnIp_HasEndpointNATData)) // don't send back if the other end has our NAT data already
+			if (XNIP_TEST_BIT(reqPacket->data.flags, XnIp_HasPortMappingsUpdated)) // don't send back if the other end has our NAT data already
 			{
-				SendXNetRequest(xsocket, XnIp_ConnectionEstablishSecure); // send EstablishSecure after we saved all NAT
+				SendXNetRequest(xsocket, EXNIP_CONNECTION_FINISH_ESTABLISH_SECURE_CHANNEL); // send EstablishSecure after we saved all NAT
 			}
 			else
 			{
-				SendXNetRequestAllSockets(XnIp_ConnectionUpdateNAT);
+				SendXNetRequestAllSockets(EXNIP_CONNECTION_PORT_MAPPING_UPDATE);
 			}
 			SetConnectStatus(XNET_CONNECT_STATUS_PENDING);
 		}
 		break;
 
-	case XnIp_ConnectionEstablishSecure:
+	case EXNIP_CONNECTION_FINISH_ESTABLISH_SECURE_CHANNEL:
 		if (!ConnectStatusPending())
 		{
 			break;
@@ -874,18 +848,18 @@ void XnIp::HandleConnectionPacket(XVirtualSocket* xsocket, const XNetRequestPack
 				|| memcmp(gXnIpMgr.GetLocalUserXn()->m_xnaddr.abEnet, reqPacket->data.xnaddr.abEnet, sizeof(XNADDR::abEnet)) > 0
 				)
 			{
-				SendXNetRequest(xsocket, XnIp_ConnectionDeclareConnected);
+				SendXNetRequest(xsocket, EXNIP_CONNECTION_ACKNOWLEDGE_CONNECTED_SECURE_CHANNEL);
 			}
 			else
 			{
-				SendXNetRequest(xsocket, XnIp_ConnectionEstablishSecure);
+				SendXNetRequest(xsocket, EXNIP_CONNECTION_FINISH_ESTABLISH_SECURE_CHANNEL);
 			}
 			XNIP_SET_BIT(m_flags, XnIp::XnIp_ConnectDeclareConnectedRequestSent, true);
 		}
 		break;
 
 		// this will prevent the connection to send packets before we know we can send them
-	case XnIp_ConnectionDeclareConnected:
+	case EXNIP_CONNECTION_ACKNOWLEDGE_CONNECTED_SECURE_CHANNEL:
 		if (!ConnectStatusPending())
 		{
 			break;
@@ -894,7 +868,7 @@ void XnIp::HandleConnectionPacket(XVirtualSocket* xsocket, const XNetRequestPack
 		{
 		case XNET_CONNECT_STATUS_PENDING:
 			LOG_TRACE_NETWORK("{} - connection id: {:X} successfully connected", __FUNCTION__, GetConnectionId().s_addr);
-			SendXNetRequest(xsocket, XnIp_ConnectionDeclareConnected);
+			SendXNetRequest(xsocket, EXNIP_CONNECTION_ACKNOWLEDGE_CONNECTED_SECURE_CHANNEL);
 			// reset the flag if we successfully re-connected
 			XNIP_SET_BIT(m_flags, XnIp_ReconnectionAttempt, false);
 			SetConnectStatus(XNET_CONNECT_STATUS_CONNECTED);
@@ -906,8 +880,8 @@ void XnIp::HandleConnectionPacket(XVirtualSocket* xsocket, const XNetRequestPack
 		}
 		break;
 
-	case XnIp_ConnectionCloseSecure:
-		//HandleDisconnectPacket(xsocket, XNetPck, lpFrom);
+	case EXNIP_CONNECTION_CLOSE_SECURE:
+		//HandleDisconnectPacket(xsocket, packet, lpFrom);
 		//LOG_TRACE_NETWORK("{} - Received ConnectionCloseSecure request from ip address {:x}, port: {}", __FUNCTION__, htonl(lpFrom->sin_addr.s_addr), htons(lpFrom->sin_port));
 		break;
 	} // switch (reqPacket->data.reqType)
@@ -935,7 +909,7 @@ INT WINAPI XNetCleanup()
 {
 	LOG_TRACE_NETWORK("XNetCleanup()");
 
-	g_XSockMgr.SocketsDisposeAll();
+	gXnIpMgr.Dispose();
 
 	return 0;
 }
@@ -989,6 +963,7 @@ INT WINAPI XNetXnAddrToInAddr(const XNADDR* pxna, const XNKID* pxnkid, IN_ADDR* 
 	}
 
 	LOG_TRACE_NETWORK("{} - XNADDR local-address: {:X}, online-address: {:X}", __FUNCTION__, ntohl(pxna->ina.s_addr), ntohl(pxna->inaOnline.s_addr));
+	//LOG_TRACE_NETWORK("{} - XnIp online-address: {:X}", __FUNCTION__, ntohl(xnIp->GetOnlineIpAddr().s_addr));
 	return ret;
 }
 
@@ -1042,7 +1017,7 @@ int WINAPI XNetConnect(const IN_ADDR ina)
 	// send connect packets only if the state is idle
 	if (xnIp->GetConnectStatus() == XNET_CONNECT_STATUS_IDLE)
 	{
-		xnIp->SendXNetRequestAllSockets(XnIp_ConnectionUpdateNAT);
+		xnIp->SendXNetRequestAllSockets(EXNIP_CONNECTION_PORT_MAPPING_UPDATE);
 		xnIp->SetConnectStatus(XNET_CONNECT_STATUS_PENDING);
 	}
 

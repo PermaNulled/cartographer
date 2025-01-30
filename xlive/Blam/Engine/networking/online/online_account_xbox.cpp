@@ -31,6 +31,7 @@ void online_account_transition_to_offline()
 	BYTE abOnline[20];
 	XNetRandom(abEnet, sizeof(abEnet));
 	XNetRandom(abOnline, sizeof(abOnline));
+	XUserSignOut(0);
 	ConfigureUserDetails("[Username]", "12345678901234567890123456789012", rand(), 0, H2Config_ip_lan, ByteToHexStr(abEnet, sizeof(abEnet)).c_str(), ByteToHexStr(abOnline, sizeof(abOnline)).c_str(), false);
 
 	H2Config_master_ip = inet_addr("127.0.0.1");

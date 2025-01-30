@@ -14,6 +14,11 @@
 
 #define SOCK_MAX_RECV_PAYLOADS_TO_READ_PER_CALL 20
 
+enum
+{
+	EXSOCK_IDENTIFIER = 'XSoC'
+};
+
 // 239.255.0.1
 #define XSOCK_MUTICAST_ADDR  0xefff0001
 #define XSOCK_MULTICAST_PORT 56011
@@ -24,7 +29,7 @@ class XSocketManager
 {
 	bool m_initialized = false;
 
-	class XBroadcastSocket
+	class XInternalSocket
 	{
 		friend class XSocketManager;
 
@@ -57,16 +62,28 @@ class XSocketManager
 		}
 	};
 
-	XBroadcastSocket m_broadcastLANSock;
-	XBroadcastSocket m_broadcastLocalhostSock;
+	XInternalSocket m_mainUdpSocket;
+	XInternalSocket m_broadcastLANSock;
+	XInternalSocket m_broadcastLocalhostSock;
 
 public:
 	void Initialize();
+	void Dispose();
+
 	bool SystemLinkSocketInitialize(WORD port);
 	bool SystemLinkSocketReset(WORD port);
 	void SystemLinkDispose();
 
-	bool CreateSocket(XBroadcastSocket* sock, WORD port, bool multicast);
+	bool MainLinkSocketInitialize(WORD port);
+	bool MainLinkSocketReset(WORD port);
+	void MainLinkDispose();
+
+	SOCKET GetMainUdpSocketSystemHandle() const
+	{
+		return m_mainUdpSocket.m_systemSockHandle;
+	}
+
+	bool CreateSocketUDP(XInternalSocket* sock, unsigned long interfaceAddress, WORD port, bool multicast);
 
 	WORD SystemLinkGetPort() const
 	{
@@ -103,13 +120,13 @@ public:
 		return false;
 	}
 
-	static void SocketsDisposeAll();
-	static std::vector<XVirtualSocket*> sockets;
+	void SocketsDisposeAll();
+	std::vector<XVirtualSocket*> sockets;
 };
 
 struct XVirtualSocket
 {
-	SOCKET winSockHandle;
+	SOCKET systemSocketHandle;
 	int identifier;
 	int protocol;
 	sockaddr_in name;
@@ -118,10 +135,10 @@ struct XVirtualSocket
 
 	XVirtualSocket(int _protocol, bool _isVoiceSocket)
 	{
-		identifier = 'XSOC';
+		identifier = EXSOCK_IDENTIFIER;
 		protocol = _protocol;
 		isVoiceProtocol = _isVoiceSocket;
-		winSockHandle = INVALID_SOCKET;
+		systemSocketHandle = INVALID_SOCKET;
 		isBroadcast = false;
 		memset(&name, 0, sizeof(name));
 	}
@@ -134,7 +151,7 @@ struct XVirtualSocket
 	/* VDP uses UDP, and some encryption (done at network transport layer, not game layer) */
 	bool IsVDP() const { return protocol == IPPROTO_UDP; }
 
-	bool IsValid() const { return identifier == 'XSoC'; }
+	bool IsValid() const { return identifier == EXSOCK_IDENTIFIER; }
 
 	// all fields in sockaddr_in are in network byte order
 	// some helpers for conversion for each case needed
@@ -163,7 +180,7 @@ struct XVirtualSocket
 	int sock_read(LPWSABUF lpBuffers, DWORD dwBufferCount, LPDWORD lpNumberOfBytesRecvd, LPDWORD lpFlags, struct sockaddr* lpFrom, LPINT lpFromlen, LPWSAOVERLAPPED lpOverlapped, LPWSAOVERLAPPED_COMPLETION_ROUTINE lpCompletionRoutine);
 
 private:
-	int read_system_socket(LPWSABUF lpBuffers, DWORD dwBufferCount, LPDWORD lpNumberOfBytesRecvd, LPDWORD lpFlags, struct sockaddr* lpFrom, LPINT lpFromlen, LPWSAOVERLAPPED lpOverlapped, LPWSAOVERLAPPED_COMPLETION_ROUTINE lpCompletionRoutine, bool* winApiError);
+	int read_socket(LPWSABUF lpBuffers, DWORD dwBufferCount, LPDWORD lpNumberOfBytesRecvd, LPDWORD lpFlags, struct sockaddr* lpFrom, LPINT lpFromlen, LPWSAOVERLAPPED lpOverlapped, LPWSAOVERLAPPED_COMPLETION_ROUTINE lpCompletionRoutine, bool* winApiError);
 };
 
 void WINAPI XSocketWSASetLastError(int iError);
