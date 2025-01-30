@@ -219,7 +219,7 @@ int XnIpManager::HandleRecvdPacket(XVirtualSocket* xsocket, sockaddr_in* lpFrom,
 				HandleXNetRequestPacket(xsocket, requestPacket, lpFrom, lpBytesRecvdCount); // save NAT info and send back a connection packet
 
 				// set the bytes received count to 0
-				// should pool another packet after, so we keep the game fed with data
+				// should signal the callee to poll another packet, so the game is kept fed with data if any
 				*lpBytesRecvdCount = 0;
 				return SOCKET_ERROR;
 			}

@@ -306,8 +306,27 @@ int XVirtualSocket::read_socket(
 			lpCompletionRoutine);
 	}
 
-	int result = read_system_socket(systemSocketHandle, lpBuffers, dwBufferCount, lpNumberOfBytesRecvd, lpFlags, lpFrom, lpFromlen, lpOverlapped, lpCompletionRoutine);
+	// ### TODO FIXME this might be better to be executed asynchronously, in another network thread, handling connections
+	// but for now just leverage the current Halo 2's behaviour of polling all network sockets, and read our network data here in case 
 
+	// read the main xnet socket
+	int result = read_system_socket(
+		g_XSockMgr.GetMainUdpSocketSystemHandle(),
+		lpBuffers,
+		dwBufferCount,
+		lpNumberOfBytesRecvd,
+		lpFlags,
+		lpFrom,
+		lpFromlen,
+		lpOverlapped,
+		lpCompletionRoutine);
+
+	if (result != SOCKET_ERROR)
+	{
+		gXnIpMgr.HandleRecvdPacket(this, (sockaddr_in*)lpFrom, lpBuffers, dwBufferCount, lpNumberOfBytesRecvd);
+	}
+
+	result = read_system_socket(systemSocketHandle, lpBuffers, dwBufferCount, lpNumberOfBytesRecvd, lpFlags, lpFrom, lpFromlen, lpOverlapped, lpCompletionRoutine);
 	bool mainSocketEmpty = result == SOCKET_ERROR
 		&& WSAGetLastError() == WSAEWOULDBLOCK;
 
@@ -347,23 +366,6 @@ int XVirtualSocket::read_socket(
 		}
 	}
 
-	// ### TODO FIXME this might be better to be executed asynchronously, in another network thread, handling connections
-	// but for now just leverage the current Halo 2's behaviour of polling all network sockets, and read our network data here in case 
-	if (mainSocketEmpty)
-	{
-		// read the main xnet socket
-		result = read_system_socket(
-			g_XSockMgr.GetMainUdpSocketSystemHandle(),
-			lpBuffers,
-			dwBufferCount,
-			lpNumberOfBytesRecvd,
-			lpFlags,
-			lpFrom,
-			lpFromlen,
-			lpOverlapped,
-			lpCompletionRoutine);
-	}
-	
 	if (result == SOCKET_ERROR)
 	{
 		*lpNumberOfBytesRecvd = 0;
@@ -371,7 +373,7 @@ int XVirtualSocket::read_socket(
 			*outWinApiError = true;
 		return SOCKET_ERROR;
 	}
-
+	
 	result = gXnIpMgr.HandleRecvdPacket(this, (sockaddr_in*)lpFrom, lpBuffers, dwBufferCount, lpNumberOfBytesRecvd);
 	return result;
 }
@@ -521,21 +523,15 @@ int WINAPI XSocketWSASendTo(SOCKET s, LPWSABUF lpBuffers, DWORD dwBufferCount, L
 			sendToAddr.sin_addr = xnIp->GetLanIpAddr();
 		}
 
-		switch (xnIp->GetConnectStatus())
+		sendToAddr.sin_port = xnIp->m_xnaddr.wPortOnline;
+		if (xnIp->PortMappingAvailable(inTo->sin_port))
 		{
-		case XNET_CONNECT_STATUS_IDLE:
-		case XNET_CONNECT_STATUS_PENDING:
-			sendToAddr.sin_port = xnIp->m_xnaddr.wPortOnline;
-			break;
-		case XNET_CONNECT_STATUS_CONNECTED:
-			sendToAddr.sin_port = xnIp->m_xnaddr.wPortOnline;
 			const sockaddr_in* mapping = xnIp->GetPortMapping(inTo->sin_port);
+			// if port map is available, use it
 			if (!xsocket->SockAddrInInvalid(mapping))
 			{
-				// if there's nat data use it
 				sendToAddr = *mapping;
 			}
-			break;
 		}
 
 		int result = SOCKET_ERROR;

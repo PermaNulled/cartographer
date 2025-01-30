@@ -399,6 +399,26 @@ public:
 		}
 	}
 
+	bool PortMappingAvailable(WORD virtualPort) const
+	{
+		NetElement* elem = m_netAddrMappings.first();
+
+		bool result = false;
+		while (elem)
+		{
+			PortMapping* mapping = (PortMapping*)elem->data;
+			if (mapping->virtualPort == virtualPort
+				&& mapping->state == PortMapping::PortMapState::XNIP_NET_ADDRESS_MAP_AVAILABLE)
+			{
+				return true;
+			}
+
+			elem = elem->next;
+		}
+
+		return result;
+	}
+
 	bool PortMappingsAvailable() const
 	{
 		NetElement* elem = m_netAddrMappings.first();
