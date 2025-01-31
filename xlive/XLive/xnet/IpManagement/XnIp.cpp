@@ -285,7 +285,7 @@ int XnIpManager::GetEstablishedConnectionIdentifierByRecvAddr(XVirtualSocket* xs
 
 void XnIpManager::SetupLocalConnectionInfo(unsigned long xnaddr, unsigned long lanaddr, unsigned short baseport, const char* machineUID, const char* abOnline)
 {
-	SecureZeroMemory(&m_ipLocal, sizeof(m_ipLocal));
+	XnIpManager::UnregisterLocalConnectionInfo();
 
 	m_ipLocal.m_xnaddr.ina = CNic::GetBestInterfaceRouteAddressFromIp("0.0.0.0"); // pass INADDR_ANY
 
