@@ -310,7 +310,9 @@ int XVirtualSocket::read_socket(
 	// but for now just leverage the current Halo 2's behaviour of polling all network sockets, and read our network data here in case 
 
 	// read the main xnet socket
-	int result = read_system_socket(
+	int result;
+	
+	/*result = read_system_socket(
 		g_XSockMgr.GetMainUdpSocketSystemHandle(),
 		lpBuffers,
 		dwBufferCount,
@@ -324,7 +326,7 @@ int XVirtualSocket::read_socket(
 	if (result != SOCKET_ERROR)
 	{
 		gXnIpMgr.HandleRecvdPacket(this, (sockaddr_in*)lpFrom, lpBuffers, dwBufferCount, lpNumberOfBytesRecvd);
-	}
+	}*/
 
 	result = read_system_socket(systemSocketHandle, lpBuffers, dwBufferCount, lpNumberOfBytesRecvd, lpFlags, lpFrom, lpFromlen, lpOverlapped, lpCompletionRoutine);
 	bool mainSocketEmpty = result == SOCKET_ERROR
@@ -523,7 +525,8 @@ int WINAPI XSocketWSASendTo(SOCKET s, LPWSABUF lpBuffers, DWORD dwBufferCount, L
 			sendToAddr.sin_addr = xnIp->GetLanIpAddr();
 		}
 
-		sendToAddr.sin_port = xnIp->m_xnaddr.wPortOnline;
+		//sendToAddr.sin_port = xnIp->m_xnaddr.wPortOnline;
+		sendToAddr.sin_port = htons(ntohs(xnIp->m_xnaddr.wPortOnline) + (ntohs(inTo->sin_port) % 1000));
 		if (xnIp->PortMappingAvailable(inTo->sin_port))
 		{
 			const sockaddr_in* mapping = xnIp->GetPortMapping(inTo->sin_port);
@@ -531,7 +534,25 @@ int WINAPI XSocketWSASendTo(SOCKET s, LPWSABUF lpBuffers, DWORD dwBufferCount, L
 			if (!xsocket->SockAddrInInvalid(mapping))
 			{
 				sendToAddr = *mapping;
+
+				LOG_TRACE_NETWORK("{} - using available port mapping for connection: {:X}, ip address: {:X} port: {}, local virtual: {}",
+					__FUNCTION__,
+					xnIp->GetConnectionId().s_addr,
+					ntohl(xnIp->GetOnlineIpAddr().s_addr),
+					ntohs(sendToAddr.sin_port),
+					xsocket->GetHostOrderSocketVirtualPort()
+					);
 			}
+		}
+		else
+		{
+			LOG_TRACE_NETWORK("{} - using default port mapping, for connection: {:X}, ip address: {:X} port: {}, local virtual: {}", 
+				__FUNCTION__, 
+				xnIp->GetConnectionId().s_addr, 
+				ntohl(xnIp->GetOnlineIpAddr().s_addr), 
+				ntohs(sendToAddr.sin_port),
+				xsocket->GetHostOrderSocketVirtualPort()
+				);
 		}
 
 		int result = SOCKET_ERROR;
@@ -544,6 +565,14 @@ int WINAPI XSocketWSASendTo(SOCKET s, LPWSABUF lpBuffers, DWORD dwBufferCount, L
 			result = sendto(xsocket->systemSocketHandle, lpBuffers[i].buf, lpBuffers[i].len, dwFlags, (const sockaddr*)&sendToAddr, sizeof(sendToAddr));
 			if (result == SOCKET_ERROR)
 				break;
+
+			LOG_TRACE_NETWORK("{} - sent packet to connection: {:X}, ip address: {:X} port: {}, local virtual: {}",
+				__FUNCTION__,
+				xnIp->GetConnectionId().s_addr,
+				ntohl(xnIp->GetOnlineIpAddr().s_addr),
+				ntohs(sendToAddr.sin_port),
+				xsocket->GetHostOrderSocketVirtualPort()
+				);
 
 			pckSent++;
 			dwNumberOfBytesSent += result;
@@ -706,12 +735,38 @@ SOCKET WINAPI XSocketBind(SOCKET s, const struct sockaddr* name, int namelen)
 	sockBindInAddr->sin_addr.s_addr = htonl(INADDR_ANY);
 	sockBindInAddr->sin_port = htons(0);
 
+	switch (ntohs(virtual_port))
+	{
+	case 1000:
+	case 1001:
+		sockBindInAddr->sin_port = htons(H2Config_base_port + (ntohs(virtual_port) % 1000));
+		break;
+	default:
+		break;
+	}
+
 	LOG_TRACE_NETWORK("XSocketBind() - virtual socket port - {}", ntohs(virtual_port));
 
 	int ret = bind(xsocket->systemSocketHandle, &sockBind, namelen);
 
 	if (ret == SOCKET_ERROR)
-		LOG_TRACE_NETWORK("{} - SOCKET_ERROR", __FUNCTION__);
+		LOG_TRACE_NETWORK("{}() - SOCKET_ERROR", __FUNCTION__);
+
+	if (ret != SOCKET_ERROR)
+	{
+		sockaddr assignedAddr;
+		int assignedAddrSize = sizeof(assignedAddr);
+
+		getsockname(xsocket->systemSocketHandle, &assignedAddr, &assignedAddrSize);
+
+		sockaddr_in* assignedAddrIn = (sockaddr_in*)&assignedAddr;
+
+		LOG_TRACE_NETWORK("{}() - socket with virtual port: {} assigned system socket port: {}",
+			__FUNCTION__,
+			ntohs(virtual_port),
+			ntohs(assignedAddrIn->sin_port)
+		);
+	}
 
 	return ret;
 }

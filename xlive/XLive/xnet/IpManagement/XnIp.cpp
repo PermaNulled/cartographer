@@ -210,11 +210,13 @@ int XnIpManager::HandleRecvdPacket(XVirtualSocket* xsocket, sockaddr_in* lpFrom,
 			if (*lpBytesRecvdCount == sizeof(XNetRequestPacket)
 				&& strncmp(requestPacket->pckHeader.signatureString, XNIP_REQUEST_HEADER_STR, XNIP_MAX_PCK_STR_HDR_LEN) == 0)
 			{
-				LOG_INFO_NETWORK("{} - Received XNetRequest type: {} from ip address {:X}, port: {}",
+				LOG_INFO_NETWORK("{} - Received XNetRequest type: {} from ip address {:X}, port: {}, virtual: {}",
 					__FUNCTION__,
 					(int)requestPacket->data.reqType,
 					ntohl(lpFrom->sin_addr.s_addr),
-					ntohs(lpFrom->sin_port));
+					ntohs(lpFrom->sin_port),
+					ntohs(requestPacket->data.senderVirtualPort)
+					);
 
 				HandleXNetRequestPacket(xsocket, requestPacket, lpFrom, lpBytesRecvdCount); // save NAT info and send back a connection packet
 
@@ -319,7 +321,8 @@ void XnIpManager::SetupLocalConnectionInfo(unsigned long xnaddr, unsigned long l
 	HexStrToBytes(std::string(abOnline, sizeof(XNADDR::abOnline) * 2), m_ipLocal.m_xnaddr.abOnline, sizeof(XNADDR::abOnline));
 	m_ipLocal.m_pckStats.PckDataSampleUpdate();
 
-	m_ipLocal.m_valid = g_XSockMgr.MainLinkSocketInitialize(htons(baseport));
+	//m_ipLocal.m_valid = g_XSockMgr.MainLinkSocketInitialize(htons(baseport));
+	m_ipLocal.m_valid = true;
 }
 
 void XnIpManager::UnregisterLocalConnectionInfo()
@@ -477,6 +480,11 @@ int XnIpManager::RegisterNewXnIp(const XNADDR* pxna, const XNKID* pxnkid, IN_ADD
 
 			for (auto socket : g_XSockMgr.sockets)
 			{
+				WORD virtualPort = socket->GetHostOrderSocketVirtualPort();
+				if (virtualPort != 1000
+					&& virtualPort != 1001)
+					continue;
+
 				PortMapping map;
 				ZeroMemory(&map, sizeof(map));
 				map.virtualPort = socket->GetNetworkOrderSocketVirtualPort();
@@ -732,7 +740,15 @@ void XnIp::SavePortMapping(XVirtualSocket* xsocket, WORD virtualPort, const sock
 	LOG_TRACE_NETWORK("{} - socket: {}, connection index: {}, identifier: {:X}", __FUNCTION__,
 		xsocket->systemSocketHandle, XnIp::GetConnectionIndex(GetConnectionId()), GetConnectionId().s_addr);
 
-	UpdatePortMapping(virtualPort, addr);
+	switch (ntohs(virtualPort))
+	{
+	case 1000:
+	case 1001:
+		UpdatePortMapping(virtualPort, addr);
+		break;
+	default:
+		break;
+	}
 }
 
 void XnIp::SendXNetRequestAllSockets(eXnip_ConnectRequestType reqType)
@@ -743,6 +759,10 @@ void XnIp::SendXNetRequestAllSockets(eXnip_ConnectRequestType reqType)
 		// connect only UDP sockets
 		if (sockIt->IsUDP())
 		{
+			if (sockIt->GetHostOrderSocketVirtualPort() != 1000
+				&& sockIt->GetHostOrderSocketVirtualPort() != 1001)
+				continue;
+
 			SendXNetRequest(sockIt, reqType);
 		}
 	}
@@ -794,7 +814,7 @@ void XnIp::SendXNetRequest(XVirtualSocket* xsocket, eXnip_ConnectRequestType req
 	m_connectionPacketsSentCount++;
 
 	m_requestContext = true;
-	int udp_send_result = xsocket->UdpSend((char*)&reqPacket, sizeof(XNetRequestPacket), 0, (sockaddr*)&sendToAddr, sizeof(sendToAddr));
+	int udp_send_result = xsocket->UdpSend((const char*)&reqPacket, sizeof(XNetRequestPacket), 0, (sockaddr*)&sendToAddr, sizeof(sendToAddr));
 	LOG_INFO_NETWORK("{} - request sent, socket handle: {}, connection index: {}, connection id: {:x}, n0nceKey: {}",
 		__FUNCTION__,
 		xsocket->systemSocketHandle,
@@ -816,10 +836,10 @@ void XnIp::HandleConnectionPacket(XVirtualSocket* xsocket, const XNetRequestPack
 
 		SavePortMapping(xsocket, reqPacket->data.senderVirtualPort, recvAddr);
 
-		// check if NAT is updated after we updated it
+		// check if port mappings are available, after saving them
 		if (PortMappingsAvailable())
 		{
-			if (XNIP_TEST_BIT(reqPacket->data.flags, XnIp_HasPortMappingsUpdated)) // don't send back if the other end has our NAT data already
+			if (XNIP_TEST_BIT(reqPacket->data.flags, XnIp_HasPortMappingsUpdated)) // don't send back if the other end has our port mappings already
 			{
 				SendXNetRequest(xsocket, EXNIP_CONNECTION_FINISH_ESTABLISH_SECURE_CHANNEL); // send EstablishSecure after we saved all NAT
 			}

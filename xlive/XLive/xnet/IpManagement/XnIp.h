@@ -325,14 +325,14 @@ public:
 		return GetConnectStatus() == XNET_CONNECT_STATUS_IDLE;
 	}
 
-	bool ConnectStatusConnected() const 
-	{
-		return GetConnectStatus() == XNET_CONNECT_STATUS_CONNECTED;
-	}
-
 	bool ConnectStatusPending() const
 	{
 		return GetConnectStatus() == XNET_CONNECT_STATUS_PENDING;
+	}
+
+	bool ConnectStatusConnected() const 
+	{
+		return GetConnectStatus() == XNET_CONNECT_STATUS_CONNECTED;
 	}
 
 	bool ConnectStatusLost() const
