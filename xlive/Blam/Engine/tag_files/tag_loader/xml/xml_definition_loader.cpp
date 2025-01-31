@@ -10,6 +10,7 @@
 #include "tag_files/tag_block.h"
 #include "tag_files/tag_reference.h"
 #include "tag_files/tag_loader/tag_injection.h"
+#include "tag_files/tag_loader/tag_injection_define.h"
 
 #define lazy_malloc_buffer(TYPE, COUNT)\
 	(TYPE*)malloc(sizeof(TYPE) * (COUNT))
@@ -88,29 +89,36 @@ void c_xml_definition_loader::reset_counts(void)
 	return;
 }
 
-void c_xml_definition_loader::clear()
+void c_xml_definition_loader::clear(void)
 {
 	if (this->m_tag_reference_offset_count)
+	{
 		free(this->m_tag_reference_offsets);
-
+	}
 	if (this->m_classless_tag_reference_offset_count)
+	{
 		free(this->m_classless_tag_reference_offsets);
-
+	}
 	if (this->m_data_reference_offset_count)
+	{
 		free(this->m_data_reference_offsets);
-
+	}
 	if (this->m_string_id_offset_count)
+	{
 		free(this->m_string_id_offsets);
-
+	}
 	if (this->m_tag_block_offset_count)
+	{
 		free(this->m_tag_block_offsets);
-
+	}
 	if (this->m_tag_reference_count)
+	{
 		free(this->m_tag_references);
-
+	}
 	if (this->m_data)
+	{
 		free(this->m_data);
-
+	}
 	this->reset_counts();
 	return;
 }
@@ -168,7 +176,7 @@ void c_xml_definition_loader::initialize_arrays_internal(c_xml_definition_loader
 	}
 }
 
-void c_xml_definition_loader::initialize_arrays()
+void c_xml_definition_loader::initialize_arrays(void)
 {
 	this->initialize_arrays_internal(this, this->m_definition, this->m_file_offset, 1);
 
@@ -191,6 +199,7 @@ void c_xml_definition_loader::initialize_arrays()
 		this->m_tag_references = lazy_malloc_buffer(datum, (this->m_tag_reference_offset_count + this->m_classless_tag_reference_offset_count));
 
 	this->m_data = (int8*)calloc(this->m_total_data_size, sizeof(int8));
+	return;
 }
 
 int8* c_xml_definition_loader::reserve_data(uint32 size)

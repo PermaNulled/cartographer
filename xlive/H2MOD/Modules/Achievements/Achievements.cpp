@@ -1,10 +1,14 @@
 #include "stdafx.h"
 #include "Achievements.h"
 
+#include "cseries/cseries_strings.h"
 #include "H2MOD/Modules/Accounts/Accounts.h"
 #include "H2MOD/Modules/Shell/Config.h"
 #include "rapidjson/document.h"
 #include "rapidjson/writer.h"
+
+const char k_cartographer_unlock_url[] = k_cartographer_url"/achievement-api/unlock.php";
+const char k_cartographer_achivement_list_url[] = k_cartographer_url"/achievement-api/achievement_list.php?xuid=";
 
 using namespace rapidjson;
 std::map<DWORD, bool> achievementList;
@@ -42,9 +46,7 @@ void AchievementUnlock(unsigned long long xuid, int achievement_id, XOVERLAPPED*
 		Writer<StringBuffer> writer(buffer);
 		document.Accept(writer);
 
-		std::string url(cartographerURL + "/achievement-api/unlock.php");
-
-		curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
+		curl_easy_setopt(curl, CURLOPT_URL, k_cartographer_unlock_url);
 		curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteCallback);
 		curl_easy_setopt(curl, CURLOPT_WRITEDATA, &readBuffer);
 		curl_easy_setopt(curl, CURLOPT_POST, 1L);
@@ -64,9 +66,9 @@ void GetAchievements(unsigned long long xuid)
 	curl = curl_interface_init_no_verify();
 	if (curl) {
 
-		std::string server_url(cartographerURL + "/achievement-api/achievement_list.php?xuid=" + std::to_string(xuid));
-
-		curl_easy_setopt(curl, CURLOPT_URL, server_url.c_str());
+		c_static_string<512> server_url(k_cartographer_achivement_list_url);
+		server_url.append(std::to_string(xuid).c_str());
+		curl_easy_setopt(curl, CURLOPT_URL, server_url.get_string());
 		curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteCallback);
 		curl_easy_setopt(curl, CURLOPT_WRITEDATA, &readBuffer);
 		res = curl_easy_perform(curl);

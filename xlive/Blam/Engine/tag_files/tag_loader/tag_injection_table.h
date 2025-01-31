@@ -26,8 +26,8 @@ private:
 
 	void resize_table();
 public:
-	c_tag_injection_table();
-	~c_tag_injection_table();
+	c_tag_injection_table(void);
+	~c_tag_injection_table(void);
 
 	void clear();
 

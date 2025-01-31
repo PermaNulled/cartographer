@@ -26,4 +26,6 @@ void __cdecl draw_hud_layer(void);
 
 void new_hud_draw_apply_patches(void);
 
+void new_hud_draw_deinitialize(void);
+
 void hud_widget_anchor_calculate_point(e_hud_anchor anchor, real_point2d* out_point);

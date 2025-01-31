@@ -1,6 +1,8 @@
 #include "stdafx.h"
 #include "tag_injection_manager.h"
 
+#include "tag_injection_define.h"
+
 #include "bitmaps/bitmap_group.h"
 #include "cache/pc_geometry_cache.h"
 #include "cache/pc_texture_cache.h"
@@ -587,8 +589,11 @@ datum c_tag_injecting_manager::load_tag(e_tag_group group, datum cache_datum, bo
 	return result;
 }
 
-void c_tag_injecting_manager::load_tag_internal(c_tag_injecting_manager* manager, tag_group group, datum cache_datum,
-                                                bool load_dependencies)
+void c_tag_injecting_manager::load_tag_internal(
+	c_tag_injecting_manager* manager,
+	tag_group group,
+	datum cache_datum,
+	bool load_dependencies)
 {
 	cache_file_tag_instance inst = manager->get_tag_instance_from_cache(cache_datum);
 	if (inst.tag_index != cache_datum || inst.group_tag.group != group.group)
@@ -629,6 +634,7 @@ void c_tag_injecting_manager::load_tag_internal(c_tag_injecting_manager* manager
 	{
 		c_tag_injecting_manager::load_dependencies(manager, new_entry);
 	}
+	return;
 }
 
 void c_tag_injecting_manager::load_dependencies(c_tag_injecting_manager* manager, const s_tag_injecting_table_entry* new_entry)

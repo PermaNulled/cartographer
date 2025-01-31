@@ -81,7 +81,7 @@ private:
 	void reset_counts(void);
 
 	static void initialize_arrays_internal(c_xml_definition_loader* loader, const c_xml_definition_block* definition, uint32 file_offset, uint32 block_count);
-	void initialize_arrays();
+	void initialize_arrays(void);
 	int8* reserve_data(uint32 size);
 	static void load_tag_data_internal(c_xml_definition_loader* loader, const c_xml_definition_block* definition, uint32 file_offset, int8* buffer, uint32 block_count);
 	void load_tag_data();

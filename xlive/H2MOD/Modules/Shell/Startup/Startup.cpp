@@ -408,4 +408,8 @@ void DeinitH2Startup() {
 	DeinitCustomLanguage();
 	DeinitH2Accounts();
 	DeinitH2Config();
+
+	free(H2AppDataLocal);
+	free(H2ProcessFilePath);
+	return;
 }

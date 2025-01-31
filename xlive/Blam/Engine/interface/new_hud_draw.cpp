@@ -200,11 +200,18 @@ void hud_widget_anchor_calculate_point(e_hud_anchor anchor, real_point2d* out_po
 
 bool draw_hud_bitmap_is_crosshair(datum bitmap_datum)
 {
-	for(uint32 i = 0; i < g_draw_hud_crosshair_bitmap_cache_count; i++)
-		if (g_draw_hud_crosshair_bitmap_cache[i] == bitmap_datum)
-			return true;
+	bool result = false;
 
-	return false;
+	for (uint32 i = 0; i < g_draw_hud_crosshair_bitmap_cache_count; i++)
+	{
+		if (g_draw_hud_crosshair_bitmap_cache[i] == bitmap_datum)
+		{
+			result = true;
+			break;
+		}
+	}
+
+	return result;
 }
 
 void __cdecl draw_hud_bitmap_widget(int32 local_render_user_index, s_new_hud_temporary_user_state* user_state, s_hud_bitmap_widget_definition* bitmap_widget, real32* widget_function_results)
@@ -828,5 +835,14 @@ void new_hud_draw_apply_patches(void)
 	PatchCall(Memory::GetAddress(0x226702), draw_hud_player_indicators);
 	PatchCall(Memory::GetAddress(0x224F46), draw_hud_bitmap_widget);
 	PatchCall(Memory::GetAddress(0x224FDA), draw_hud_text_widget);
+	return;
+}
+
+void new_hud_draw_deinitialize(void)
+{
+	if (g_draw_hud_crosshair_bitmap_cache)
+	{
+		free(g_draw_hud_crosshair_bitmap_cache);
+	}
 	return;
 }

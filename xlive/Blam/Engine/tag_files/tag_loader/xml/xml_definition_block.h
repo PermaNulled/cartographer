@@ -1,6 +1,7 @@
 #pragma once
-#include "cseries/cseries_strings.h"
 #include "tinyxml/tinyxml2.h"
+
+#include "cseries/cseries_strings.h"
 #include "tag_files/tag_loader/tag_injection_define.h"
 
 

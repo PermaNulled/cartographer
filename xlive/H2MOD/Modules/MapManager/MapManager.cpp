@@ -5,11 +5,12 @@
 #include "H2MOD/Modules/Shell/Config.h"
 #include "H2MOD/Modules/OnScreenDebug/OnscreenDebug.h"
 
+#include "cseries/cseries_strings.h"
+#include "main/map_repository.h"
+#include "main/game_preferences.h"
 #include "networking/NetworkMessageTypeCollection.h"
 #include "networking/logic/life_cycle_manager.h"
 
-#include "main/map_repository.h"
-#include "main/game_preferences.h"
 
 std::unique_ptr<MapManager> mapManager(std::make_unique<MapManager>());
 
@@ -360,7 +361,8 @@ static int32 map_download_curl_xferinfo_cb(void* p, curl_off_t dltotal, curl_off
 }
 
 bool MapDownloadQuery::DownloadFromRepo() {
-	std::string url(cartographerMapRepoURL + "/");
+	c_static_string<512> url(k_cartographer_map_repo_url);
+	url.append("/");
 
 	FILE* fp = nullptr;
 	CURL* curl = nullptr;
@@ -380,12 +382,12 @@ bool MapDownloadQuery::DownloadFromRepo() {
 		}
 
 		char* url_encoded_map_filename = curl_easy_escape(curl, m_clientMapFilename.c_str(), m_clientMapFilename.length());
-		url += url_encoded_map_filename;
+		url.append(url_encoded_map_filename);
 		curl_free(url_encoded_map_filename);
 
 		//fail if 404 or any other type of http error
 		curl_easy_setopt(curl, CURLOPT_FAILONERROR, true);
-		curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
+		curl_easy_setopt(curl, CURLOPT_URL, url.get_string());
 		curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, map_download_curl_write_data_cb);
 		curl_easy_setopt(curl, CURLOPT_XFERINFOFUNCTION, map_download_curl_xferinfo_cb);
 		curl_easy_setopt(curl, CURLOPT_XFERINFODATA, (void*)this);

@@ -16,7 +16,7 @@ const wchar_t *const k_report_text_file_names[k_report_text_file_type_count] = {
 
 // globals
 
-static c_static_wchar_string<MAX_PATH> g_report_text_file_paths[k_report_text_file_type_count];
+static c_static_wchar_string<MAX_PATH>* g_report_text_file_paths = { NULL };
 
 /* prototypes */
 
@@ -53,11 +53,16 @@ const wchar_t* get_crash_info_text_file_path(e_report_file_type type)
 
 void crash_info_text_files_create(const wchar_t* reports_path, const MINIDUMP_EXCEPTION_INFORMATION* minidump_info)
 {
+    g_report_text_file_paths = new c_static_wchar_string<MAX_PATH>[k_report_text_file_type_count]();
+    
     setup_cpu_info_text(reports_path, minidump_info);
     setup_exception_text(reports_path, minidump_info);
     setup_game_options_text(reports_path);
     setup_game_global_text(reports_path);
     setup_rasterizer_text(reports_path);
+
+    delete[] g_report_text_file_paths;
+    return;
 }
 
 /* private code */

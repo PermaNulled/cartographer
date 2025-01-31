@@ -15,6 +15,8 @@
 
 const char k_user_name_string[] = "username=";
 
+const char k_cartographer_create_url[] = k_cartographer_url"/create1";
+
 // TODO (Carefully) Cleanup and move
 
 static int InterpretMasterCreate(char* response_content) {
@@ -83,7 +85,7 @@ bool HandleGuiAccountCreate(char* username, char* email, char* password, e_carto
 	free(escaped_user_password);
 
 #ifndef LC4
-	int rtn_code = MasterHttpResponse(std::string(cartographerURL + "/create1").c_str(), http_request_body_build, &rtn_result);
+	int rtn_code = MasterHttpResponse(k_cartographer_create_url, http_request_body_build, &rtn_result);
 #else
 	TEST_N_DEF(LC4);
 #endif

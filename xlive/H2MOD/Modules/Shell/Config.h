@@ -32,8 +32,8 @@ enum H2Config_Experimental_Rendering_Mode : byte
 	_rendering_mode_original_game_frame_limit
 };
 
-extern std::string cartographerURL;
-extern std::string cartographerMapRepoURL;
+#define k_cartographer_url "https://cartographer.online"
+extern const char* k_cartographer_map_repo_url;
 
 extern unsigned long H2Config_master_ip;
 extern unsigned short H2Config_master_port_login;

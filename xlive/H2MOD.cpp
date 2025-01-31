@@ -1197,7 +1197,3 @@ void H2MOD::Initialize()
 
 	LOG_INFO_GAME("H2MOD - Initialized");
 }
-
-void H2MOD::Deinitialize() 
-{
-}

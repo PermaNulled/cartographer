@@ -8,6 +8,8 @@
 
 #include "main/main.h"
 
+const char k_cartographer_update_ini_url[] = k_cartographer_url"/update1.ini";
+
 bool fork_cmd_elevate(const wchar_t* cmd, wchar_t* flags = 0) {
 	SHELLEXECUTEINFO shExInfo = { 0 };
 	shExInfo.cbSize = sizeof(shExInfo);
@@ -269,7 +271,7 @@ static void FetchUpdateDetails() {
 
 	addDebugText("Fetching Update Details.");
 	char* rtn_result = 0;
-	int rtn_code = MasterHttpResponse(std::string(cartographerURL + "/update1.ini").c_str(), "", &rtn_result);
+	int rtn_code = MasterHttpResponse(k_cartographer_update_ini_url, "", &rtn_result);
 	if (rtn_code == 0) {
 		addDebugText("Got Update Details.");
 
@@ -408,9 +410,10 @@ bool DownloadUpdatedFiles() {
 				swprintf(existingfilepath, ARRAYSIZE(existingfilepath), L"%s%hs", dir_update, UpdateFileEntries[i]->local_name);
 			}
 			_wremove(existingfilepath);
-			std::string im_lazy_2_dl = "https://cartographer.online/";
-			im_lazy_2_dl += UpdateFileEntries[i]->server_uri;
-			DownloadFile(im_lazy_2_dl.c_str(), existingfilepath);
+			
+			c_static_string<1024> download_url(k_cartographer_url);
+			download_url.append(UpdateFileEntries[i]->server_uri);
+			DownloadFile(download_url.get_string(), existingfilepath);
 		}
 	}
 

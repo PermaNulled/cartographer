@@ -6,7 +6,7 @@ enum
 	k_injection_table_entry_count_per_resize = 100
 };
 
-c_tag_injection_table::c_tag_injection_table()
+c_tag_injection_table::c_tag_injection_table(void)
 {
 	this->m_entry_count = 0;
 	this->m_table_size = 0;
@@ -15,13 +15,13 @@ c_tag_injection_table::c_tag_injection_table()
 	return;
 }
 
-c_tag_injection_table::~c_tag_injection_table()
+c_tag_injection_table::~c_tag_injection_table(void)
 {
-	for(uint16 i = 0; i < this->m_entry_count; i++)
+	for(uint16 i = 0; i < this->m_entry_count; ++i)
 	{
 		ASSERT(this->m_table[i].loaded_data);
 		this->m_table[i].loaded_data->clear();
-		free(this->m_table[i].loaded_data);
+		delete this->m_table[i].loaded_data;
 	}
 
 	ASSERT(this->m_table);
@@ -32,11 +32,11 @@ c_tag_injection_table::~c_tag_injection_table()
 
 void c_tag_injection_table::clear()
 {
-	for (uint16 i = 0; i < this->m_entry_count; i++)
+	for (uint16 i = 0; i < this->m_entry_count; ++i)
 	{
 		ASSERT(this->m_table[i].loaded_data);
 		this->m_table[i].loaded_data->clear();
-		free(this->m_table[i].loaded_data);
+		delete this->m_table[i].loaded_data;
 	}
 
 	ASSERT(this->m_table);
@@ -55,9 +55,6 @@ uint16 c_tag_injection_table::get_entry_count() const
 
 s_tag_injecting_table_entry* c_tag_injection_table::init_entry(datum cache_index, e_tag_group type)
 {
-	//tag_group temp;
-	//temp.group = type;
-
 	if (this->m_entry_count >= this->m_table_size)
 	{
 		this->resize_table();
@@ -69,7 +66,7 @@ s_tag_injecting_table_entry* c_tag_injection_table::init_entry(datum cache_index
 	result->type = { type };
 	result->is_initialized = true;
 	result->is_injected = false;
-	result->loaded_data = (c_xml_definition_loader*)calloc(1, sizeof(c_xml_definition_loader));
+	result->loaded_data = new c_xml_definition_loader();
 	this->m_entry_count++;
 
 	return result;

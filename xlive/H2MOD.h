@@ -18,7 +18,6 @@ class H2MOD
 {
 public:
 	static void Initialize();
-	static void Deinitialize();
 	static void ApplyHooks();
 	static void RegisterEvents();
 	static void RefreshTogglexDelay();

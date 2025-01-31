@@ -18,6 +18,8 @@ const char k_login_token_string[] = "login_token=";
 const char k_login_username_string[] = "login_username=";
 const char k_login_ab_online_string[] = "login_abOnline=";
 
+const char k_cartographer_login_url[] = k_cartographer_url"/login2";
+
 int masterState = -1;
 char* masterStateStr = NULL;
 bool AccountEdit_remember = true;
@@ -410,7 +412,7 @@ bool HandleGuiLogin(char* ltoken, char* identifier, char* password, int* out_mas
 	free(escaped_user_password);
 
 #if !defined(LC2)
-	int error_code = MasterHttpResponse(std::string(cartographerURL + "/login2").c_str(), http_request_body_build, &rtn_result);
+	int error_code = MasterHttpResponse(k_cartographer_login_url, http_request_body_build, &rtn_result);
 #else
 	TEST_N_DEF(LC2);
 #endif
